@@ -11,6 +11,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from st_pages import show_pages_from_config
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+from sklearn import metrics
 
 # show_pages_from_config()
 # https://github.com/daniellewisDL/streamlit-cheat-sheet/blob/master/README.md
@@ -35,40 +38,6 @@ def clicked(button):
         saveSession({"confirmProgressInit": True})
     st.session_state.clicked[button] = True
 
-# def getPipeline(_model, indices_category_columns):
-#     preprocessor = ColumnTransformer(
-#         transformers=[
-#             ('cat', OneHotEncoder(), indices_category_columns),
-#         ],
-#         remainder='passthrough'
-#     )
-
-#     pipeline = Pipeline(
-#         steps=[('preprocessor', preprocessor), ('model', _model)])
-
-#     return pipeline
-
-# @st.cache_resource(show_spinner=False)
-# def loadModel(_model, x_train, y_train, category_columns, x_columns, modelName):
-
-#     # boolean_columns = x_train.columns[x_train.dtypes == 'bool'].tolist()
-
-#     x_train = x_train.values
-
-#     # convert into category column type
-#     # for col in category_columns:
-#     #     data_csv[col] = data_csv[col].astype('category')
-
-#     indices_category_columns = np.where(
-#         np.isin(x_columns, category_columns))[0]
-
-#     # indices_boolean_columns = np.where(np.isin(x_columns, boolean_columns))[0]
-
-#     pipeline = getPipeline(_model, indices_category_columns)
-
-#     pipeline.fit(x_train, y_train)
-
-#     return pipeline
 
 def getKNN_k(x_train, y_train, x_test, y_test, x_columns, min_iter=2, max_iter=25):
 
@@ -192,7 +161,7 @@ if (file_csv):
             st.form_submit_button(
                     "Begin Initialization", type="primary", on_click=clicked, args=["initModel"])
 
-
+    # PROCESS INITIALIZATION
     if getSession("clicked")["initModel"]:
         with st.spinner('Initializing the Data, please wait...'):
             random_state = getSession("random_state")
@@ -214,56 +183,84 @@ if (file_csv):
             x_test = scaller.transform(x_test)
             saveSession({"x_train": x_train, "x_test": x_test, "y_train": y_train, "y_test": y_test, "scaler": scaller})
 
-        error_rate = []
-        list_score = []
-        # Will take some time
-        for i in range(1,40):
-            knn = KNeighborsClassifier(n_neighbors=i)
-            knn.fit(x_train,y_train)
-            pred_i = knn.predict(x_test)
-            error_rate.append(np.mean(pred_i != y_test))
-            list_score.append(np.mean(pred_i != y_test))
-            knn_score = knn.score(x_test, y_test)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Linear Regression", divider='grey')
+            logreg = LogisticRegression()
+            logreg.fit(x_train, y_train)
+            logreg_score = logreg.score(x_test, y_test)
+            # sns.regplot(x=x, y=y, data=df, logistic=True, ci=None)
+            y_pred=logreg.predict(x_test)
 
-        plt.figure(figsize=(10,6))
-        plt.plot(range(1,40),error_rate,color='blue', linestyle='dashed', marker='o',
-                markerfacecolor='red', markersize=10)
-        plt.title('Error Rate vs. K Value')
-        plt.xlabel('K')
-        plt.ylabel('Error Rate')
-        st.pyplot(plt.gcf())
+            with st.expander("Show Logistic Regression Information"):
+                # plt.scatter(y_test, y_pred, color='steelblue',
+                #     label='Actual vs. Predicted', alpha=0.4)
+                # plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)],
+                #         linestyle='--', color='red', linewidth=2, label='Perfect Prediction')
 
-        if (knn_auto_k):
-            k_neighbor, k_neighbor_score = getKNN_k(x_train, y_train, x_test, y_test, list(x.columns))
-        
-        if (knn_auto_k):
-            load_knn = KNeighborsClassifier(n_neighbors=k_neighbor, weights="distance")
-        else:
-            load_knn = KNeighborsClassifier(n_neighbors=k_input, weights="distance")
-        
-        load_knn.fit(x_train, y_train)
-        load_knn_score = load_knn.score(x_test, y_test)
-        saveSession({"knn_model": load_knn, "knn_score": load_knn_score, "k_neighbor": k_neighbor, "k_neighbor_score": k_neighbor_score})
+                # plt.xlabel('Actual Values')
+                # plt.ylabel('Predicted Values')
+                # st.pyplot(plt.gcf())
+                st.markdown("**Score :** *{:.3f}*".format(logreg_score))
+                st.markdown("*Logistic Regression Model Initialization Complete*")
+
+        with col2:
+            st.subheader("KNN", divider='grey')
+            # ==================
+            # Plot error rate  
+            # ==================
+            error_rate = []
+            list_score = []
+            for i in range(1,40):
+                knn = KNeighborsClassifier(n_neighbors=i, weights="distance")
+                knn.fit(x_train,y_train)
+                pred_i = knn.predict(x_test)
+                error_rate.append(np.mean(pred_i != y_test))
+                list_score.append(knn.score(x_test, y_test))
+                knn_score = knn.score(x_test, y_test)
+            
+            plt.figure(figsize=(10,6))
+            plt.plot(range(1,40),error_rate,color='blue', linestyle='dashed', marker='o',
+                    markerfacecolor='red', markersize=10)
+            plt.title('Error Rate vs. K Value')
+            plt.xlabel('K')
+            plt.ylabel('Error Rate')
+            
+            # Get the best K
+            k_auto_neighbor, k_neighbor_score = getKNN_k(x_train, y_train, x_test, y_test, list(x.columns))
+            
+            if (knn_auto_k):
+                load_knn = KNeighborsClassifier(n_neighbors=k_auto_neighbor, weights="distance")
+            else:
+                load_knn = KNeighborsClassifier(n_neighbors=k_input, weights="distance")
+            load_knn.fit(x_train, y_train)
+            y_pred_knn = load_knn.predict(x_test)
+            load_knn_score = load_knn.score(x_test, y_test)
+            saveSession({"knn_model": load_knn, "knn_score": load_knn_score, "k_neighbor": k_auto_neighbor, "k_neighbor_score": k_neighbor_score})
 
 
-        with st.expander("Show Model Information"):
-            st.markdown("**Best K :** *{}*".format(k_neighbor))
-            # st.markdown("**MSE :** *{:.3f}*".format(mse))
-            # st.markdown("**MAE :** *{:.3f}*".format(mae))
-            # st.markdown("**r2 :** *{:.3f}*".format(r2))
-            # st.pyplot(load_knn)
-            st.markdown("*KNN Model Initialization Complete*")
+
+            with st.expander("Show KNN Information"):
+                st.markdown("**Score :** *{:.3f}*".format(load_knn_score))
+                if (knn_auto_k):
+                    st.markdown("**Best K :** *{}*".format(k_auto_neighbor))
+                    st.pyplot(plt.gcf())
+                st.markdown("*KNN Model Initialization Complete*")
+                plt.clf()
+                plt.scatter(y_test, y_pred, color='steelblue',label='Actual vs. Predicted', alpha=0.4)
+                plt.xlabel('Actual Values')
+                plt.ylabel('Predicted Values')
+                st.pyplot(plt.gcf())
+
+
+
+
+
+
 
 
 # with st.spinner("Loading...", ):
 #     time.sleep(5)
-
-
-
-
-
-
-
 # st.markdown("aaaaa")
 
 
