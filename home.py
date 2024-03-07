@@ -35,7 +35,9 @@ file_csv = st.file_uploader("Browse CSV file", type=["csv"], on_change=lambda: s
 
 # First Initialization when project run
 if 'clicked' not in st.session_state:
-    st.session_state["clicked"] = {"confirmTarget": False, "initData": False, "initModel": False, "confirmDropped": False, "initLogregModel": False, "initKNNModel": False, "initSVMModel": False, "confirmProgressInit": False,
+    st.session_state["clicked"] = {"confirmTarget": False, "initData": False, "initModel": False, "confirmDropped": False, 
+                                   "initLogregModel": False, "initKNNModel": False, "initSVMModel": False, 
+                                   "confirmProgressInit": False,
                                    "click_generate_instance_tab0": True,
                                    "click_generate_instance_tab1": True,
                                    "click_generate_instance_tab2": True}
@@ -69,6 +71,8 @@ def getKNN_k(x_train, y_train, x_test, y_test, x_columns, min_iter=2, max_iter=4
 if (file_csv):
     df = readData(file_csv)
     file_name = file_csv.name
+    st.session_state["file_csv"] = file_csv
+    st.session_state["uploaded_file_name"] = file_name
     if (file_name == "data_commuter.csv"):
         df.loc[df["Kepuasan Hidup"] == "Sangat Tidak Puas", "Kepuasan Hidup"] = 0
         df.loc[df["Kepuasan Hidup"] == "Biasa", "Kepuasan Hidup"] = 1
@@ -123,6 +127,8 @@ if (file_csv):
     st.subheader("Feature Selection", divider="grey")
 
     sbDropped = []
+    sbLogregVisualized = []
+    sbKNNVisualized = []
     dataColumns = [df.columns[idx] for idx in range(len(df.columns))]
     dataColumnsX = [df.columns[idx] for idx in range(len(df.columns)-1)]
 
@@ -165,13 +171,14 @@ if (file_csv):
             st.caption("Select features to be visualized in the dataset")
             columnOptions = [col for col in df.columns if col not in sbDropped]
             sbLogregVisualized = st.multiselect('Visualized Features', columnOptions, key="logreg_visualized_features")
-            if (len(sbLogregVisualized) > len(columnOptions)-2):
-                st.caption(":red[**WARNING!**] *At least 2 or more feature should be in the data!*")
+            if (len(sbLogregVisualized) != 2):
+                st.caption(":red[**WARNING!**] *Pick 2 features to be visualized!*")
             sbLogregVisualized_idx = [dataColumns.index(value) for value in sbLogregVisualized]
             st.form_submit_button("Proceed", type="primary", on_click=clicked, args=["initLogregModel"])
+            st.session_state["clicked"]["initLogregModel"] = True
 
     # KNN MODEL INITIALIZATION
-    if getSession("clicked")["initLogregModel"] and len(sbDropped) <= len(columnOptions)-2:
+    if getSession("clicked")["initLogregModel"] and len(sbLogregVisualized) == 2:
         # st.write(getSession("random_state"))
         st.subheader("KNN Model Initialization", divider="grey")
         with st.form(key="form_knnmodel_initialization"):
@@ -189,14 +196,15 @@ if (file_csv):
                 st.caption("Select features to be visualized in the dataset")
                 columnOptions = [col for col in df.columns if col in dataColumnsX]
                 sbKNNVisualized = st.multiselect('Visualized Features', columnOptions, key="knn_visualized_features")
-                if (len(sbKNNVisualized) > len(columnOptions)-2):
+                if (len(sbKNNVisualized) != 2):
                     st.caption(
-                        ":red[**WARNING!**] *At least 2 or more feature should be in the data!*")
+                        ":red[**WARNING!**] *Pick 2 features to be visualized!*")
                 sbKNNVisualized_idx = [columnOptions.index(value) for value in sbKNNVisualized]
             st.form_submit_button("Proceed", type="primary", on_click=clicked, args=["initKNNModel"])
+            st.session_state["clicked"]["initKNNModel"] = True
 
-    # KNN MODEL INITIALIZATION
-    if getSession("clicked")["initKNNModel"] and len(sbKNNVisualized) <= len(columnOptions)-2:
+    # SVM MODEL INITIALIZATION
+    if getSession("clicked")["initKNNModel"] and len(sbKNNVisualized) == 2:
         # st.write(getSession("random_state"))
         st.subheader("SVM Model Initialization", divider="grey")
         with st.form(key="form_svmmodel_initialization"):
@@ -204,25 +212,26 @@ if (file_csv):
             with col1:
                 st.write("#### C value")
                 st.caption("Select C value")
-                c_input = st.multiselect('C value', [0.1, 1.0, 10.0, 100.0], key="svm_inp_c")
+                c_input = st.selectbox('C value', [0.1, 1.0, 10.0, 100.0], key="svm_inp_c")
                 # st.caption("*or*")
                 # svm_auto_c = st.checkbox("Auto Select", value=True, key="svm_auto_c")
                 # st.caption("Automatically find the most optimal C for SVM model")  
             with col2:
                 st.write("#### Gamma value")
                 st.caption("Select Gamma value")
-                gamma_input = st.multiselect('Gamma value', [1, 0.1, 0.01, 0.001], key="svm_inp_gamma")
+                gamma_input = st.selectbox('Gamma value', [1, 0.1, 0.01, 0.001], key="svm_inp_gamma")
                 # st.caption("*or*")
                 # svm_auto_gmma = st.checkbox("Auto Select", value=True, key="svm_auto_gamma")
                 # st.caption("Automatically find the most optimal Gamma for SVM model")  
             with col3:
                 st.write("#### Gamma value")
                 st.caption("Select Kernal")
-                kernel_input = st.multiselect('Kernel', ['rbf', 'linear', 'poly', 'sigmoid'], key="svm_inp_kernel")
+                kernel_input = st.selectbox('Kernel', ['rbf', 'linear', 'poly', 'sigmoid'], key="svm_inp_kernel")
                 # st.caption("*or*")
                 # svm_auto_gmma = st.checkbox("Auto Select", value=True, key="svm_auto_kernel")
                 # st.caption("Automatically find the most optimal kernel for SVM model")  
             st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initSVMModel"])
+            st.session_state["clicked"]["initSVMModel"] = True
 
 
     # PROCESS INITIALIZATION
@@ -255,46 +264,50 @@ if (file_csv):
             logreg.fit(x_train, y_train)
             logreg_score = logreg.score(x_test, y_test)
             y_pred_logreg=logreg.predict(x_test)
+            saveSession({"logreg_model": logreg, "logreg_score": logreg_score})
 
-            with st.expander("Show Logistic Regression Information"):
-                st.markdown("**Score :** *{:.3f}*".format(logreg_score))
-                # Logistic Regression Model
-                feat_x = df[sbLogregVisualized[0]]
-                feat_y = df[sbLogregVisualized[1]]
-                feat_y = feat_y.astype('int')
-                # Fit logistic regression model
-                X = sm.add_constant(feat_x)  # Add constant for intercept
-                model = sm.Logit(feat_y, X)
-                result = model.fit()
-                # Get the logistic regression line
-                x_values = np.linspace(feat_x.min(), feat_x.max(), 100)
-                y_values = result.predict(sm.add_constant(x_values))
-                # Plot using seaborn
-                fig, ax = plt.subplots()
-                sns.scatterplot(x=feat_x, y=feat_y, ax=ax)
-                ax.plot(x_values, y_values)
-                ax.set_xlabel(sbLogregVisualized[0])
-                ax.set_ylabel(sbLogregVisualized[1])
-                ax.legend()
-                st.pyplot(fig)
+            if (getSession("clicked")["initLogregModel"] and len(sbLogregVisualized) == 2):
+                with st.expander("Show Logistic Regression Information"):
+                    st.markdown("**Score :** *{:.3f}*".format(logreg_score))
+                    # Logistic Regression Model
+                    feat_x = df[sbLogregVisualized[0]]
+                    feat_y = df[sbLogregVisualized[1]]
+                    feat_y = feat_y.astype('int')
+                    # Fit logistic regression model
+                    X = sm.add_constant(feat_x)  # Add constant for intercept
+                    model = sm.Logit(feat_y, X)
+                    result = model.fit()
+                    # Get the logistic regression line
+                    x_values = np.linspace(feat_x.min(), feat_x.max(), 100)
+                    y_values = result.predict(sm.add_constant(x_values))
+                    # Plot using seaborn
+                    fig, ax = plt.subplots()
+                    sns.scatterplot(x=feat_x, y=feat_y, ax=ax)
+                    ax.plot(x_values, y_values)
+                    ax.set_xlabel(sbLogregVisualized[0])
+                    ax.set_ylabel(sbLogregVisualized[1])
+                    ax.legend()
+                    st.pyplot(fig)
 
-                # AUC/ROC Curve
-                fpr, tpr, _ = roc_curve(y_test, y_pred_logreg)
-                roc_auc = auc(fpr, tpr)
-                # Plot ROC curve
-                plt.figure()
-                lw = 2
-                plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-                plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
-                plt.xlim([0.0, 1.0])
-                plt.ylim([0.0, 1.05])
-                plt.xlabel('False Positive Rate')
-                plt.ylabel('True Positive Rate')
-                plt.title('Receiver Operating Characteristic (ROC) Curve')
-                plt.legend(loc="lower right")
-                st.pyplot(plt.gcf())
+                    # AUC/ROC Curve
+                    probabilities = logreg.predict_proba(x_test)
+                    # fpr, tpr, _ = roc_curve(y_test, y_pred_knn)
+                    fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
+                    roc_auc = auc(fpr, tpr)
+                    # Plot ROC curve
+                    plt.figure()
+                    lw = 2
+                    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+                    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
+                    plt.xlim([0.0, 1.0])
+                    plt.ylim([0.0, 1.05])
+                    plt.xlabel('False Positive Rate')
+                    plt.ylabel('True Positive Rate')
+                    plt.title('Receiver Operating Characteristic (ROC) Curve')
+                    plt.legend(loc="lower right")
+                    st.pyplot(plt.gcf())
 
-                st.markdown("*Logistic Regression Model Initialization Complete*")
+                    st.markdown("*Logistic Regression Model Initialization Complete*")
 
         with col2:
             st.subheader("KNN", divider='grey')
@@ -328,77 +341,83 @@ if (file_csv):
             load_knn_score = load_knn.score(x_test, y_test)
             saveSession({"knn_model": load_knn, "knn_score": load_knn_score, "k_neighbor": k_auto_neighbor, "k_neighbor_score": k_neighbor_score})
         
-            with st.expander("Show KNN Information"):
-                st.markdown("**Score :** *{:.3f}*".format(load_knn_score))
-                if (knn_auto_k):
-                    st.markdown("**Best K :** *{}*".format(k_auto_neighbor))
+            if (getSession("clicked")["initKNNModel"] and len(sbKNNVisualized) == 2):
+                with st.expander("Show KNN Information"):
+                    st.markdown("**Score :** *{:.3f}*".format(load_knn_score))
+                    if (knn_auto_k):
+                        st.markdown("**Best K :** *{}*".format(k_auto_neighbor))
+                        st.pyplot(plt.gcf())
+                    plt.clf()
+                    test_point = x_test[0]
+                    if (knn_auto_k):
+                        distances, indices = knn.kneighbors([test_point], n_neighbors=k_auto_neighbor)
+                    else:
+                        distances, indices = knn.kneighbors([test_point], n_neighbors=k_input)
+                    plt.scatter(x_train[:, sbKNNVisualized_idx[0]], x_train[:, sbKNNVisualized_idx[1]], c=[(0.5, 0.5, 0.5, 0.1)], s=30, edgecolors=(0, 0, 0, 0.5), label='Training Data')
+                    plt.scatter(x_train[indices[0], sbKNNVisualized_idx[0]], x_train[indices[0], sbKNNVisualized_idx[1]], c='cyan', marker='o', edgecolors='k', label='Nearest Neighbors')
+                    plt.scatter(test_point[sbKNNVisualized_idx[0]], test_point[sbKNNVisualized_idx[1]], c='red', marker='x', edgecolors='k', s=100, label='Test Point')
+                    plt.xlabel('Feature 1')
+                    plt.ylabel('Feature 2')
+                    plt.title('Nearest Neighbors Visualization')
+                    plt.legend()
                     st.pyplot(plt.gcf())
-                plt.clf()
-                test_point = x_test[0]
-                if (knn_auto_k):
-                    distances, indices = knn.kneighbors([test_point], n_neighbors=k_auto_neighbor)
-                else:
-                    distances, indices = knn.kneighbors([test_point], n_neighbors=k_input)
-                plt.scatter(x_train[:, sbKNNVisualized_idx[0]], x_train[:, sbKNNVisualized_idx[1]], c=[(0.5, 0.5, 0.5, 0.1)], s=30, edgecolors=(0, 0, 0, 0.5), label='Training Data')
-                plt.scatter(x_train[indices[0], sbKNNVisualized_idx[0]], x_train[indices[0], sbKNNVisualized_idx[1]], c='cyan', marker='o', edgecolors='k', label='Nearest Neighbors')
-                plt.scatter(test_point[sbKNNVisualized_idx[0]], test_point[sbKNNVisualized_idx[1]], c='red', marker='x', edgecolors='k', s=100, label='Test Point')
-                plt.xlabel('Feature 1')
-                plt.ylabel('Feature 2')
-                plt.title('Nearest Neighbors Visualization')
-                plt.legend()
-                st.pyplot(plt.gcf())
 
-                # AUC/ROC Curve
-                fpr, tpr, _ = roc_curve(y_test, y_pred_knn)
-                roc_auc = auc(fpr, tpr)
+                    # AUC/ROC Curve
+                    probabilities = knn.predict_proba(x_test)
+                    # fpr, tpr, _ = roc_curve(y_test, y_pred_knn)
+                    fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
+                    roc_auc = auc(fpr, tpr)
 
-                # Plot ROC curve
-                plt.figure()
-                lw = 2
-                plt.plot(fpr, tpr, color='darkorange',
-                        lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-                plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
-                plt.xlim([0.0, 1.0])
-                plt.ylim([0.0, 1.05])
-                plt.xlabel('False Positive Rate')
-                plt.ylabel('True Positive Rate')
-                plt.title('Receiver Operating Characteristic (ROC) Curve')
-                plt.legend(loc="lower right")
-                st.pyplot(plt.gcf())
-                st.markdown("*KNN Model Initialization Complete*")
+                    # Plot ROC curve
+                    plt.figure()
+                    lw = 2
+                    plt.plot(fpr, tpr, color='darkorange',
+                            lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+                    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
+                    plt.xlim([0.0, 1.0])
+                    plt.ylim([0.0, 1.05])
+                    plt.xlabel('False Positive Rate')
+                    plt.ylabel('True Positive Rate')
+                    plt.title('Receiver Operating Characteristic (ROC) Curve')
+                    plt.legend(loc="lower right")
+                    st.pyplot(plt.gcf())
+                    st.markdown("*KNN Model Initialization Complete*")
 
         with col3:
             st.subheader("SVM", divider='grey')
             svm_model = SVC()
             # param_grid = {'C': c_input, 'gamma': gamma_input, 'kernel': kernel_input}
-            c_input = c_input[0] if c_input else 1.0
-            gamma_input = gamma_input[0] if gamma_input else 0.1
-            kernel_input = kernel_input[0] if kernel_input else 'rbf'
-            best_svm_model = SVC(C=c_input, gamma=gamma_input, kernel=kernel_input)
-            best_svm_model.fit(x_train, y_train)
-            y_pred = best_svm_model.predict(x_test)
+            # c_input = c_input[0] if c_input else 1.0
+            # gamma_input = gamma_input[0] if gamma_input else 0.1
+            # kernel_input = kernel_input[0] if kernel_input else 'rbf'
+            svm_model = SVC(C=c_input, gamma=gamma_input, kernel=kernel_input, probability=True)
+            svm_model.fit(x_train, y_train)
+            y_pred = svm_model.predict(x_test)
             svm_accuracy = accuracy_score(y_test, y_pred)
+            saveSession({"svm_model": svm_model, "svm_score": svm_accuracy})
 
-            with st.expander("Show SVM Information"):
-                st.markdown("**Score :** *{:.3f}*".format(svm_accuracy))
+            if (getSession("clicked")["initSVMModel"]):
+                with st.expander("Show SVM Information"):
+                    st.markdown("**Score :** *{:.3f}*".format(svm_accuracy))
 
-                fpr, tpr, _ = roc_curve(y_test, y_pred)
-                roc_auc = auc(fpr, tpr)
+                    probabilities = svm_model.predict_proba(x_test)
+                    fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
+                    roc_auc = auc(fpr, tpr)
 
-                # Plot ROC curve
-                plt.figure()
-                lw = 2
-                plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-                plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
-                plt.xlim([0.0, 1.0])
-                plt.ylim([0.0, 1.05])
-                plt.xlabel('False Positive Rate')
-                plt.ylabel('True Positive Rate')
-                plt.title('Receiver Operating Characteristic (ROC) Curve')
-                plt.legend(loc="lower right")
-                st.pyplot(plt.gcf())
+                    # Plot ROC curve
+                    plt.figure()
+                    lw = 2
+                    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+                    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
+                    plt.xlim([0.0, 1.0])
+                    plt.ylim([0.0, 1.05])
+                    plt.xlabel('False Positive Rate')
+                    plt.ylabel('True Positive Rate')
+                    plt.title('Receiver Operating Characteristic (ROC) Curve')
+                    plt.legend(loc="lower right")
+                    st.pyplot(plt.gcf())
 
-                st.markdown("*Logistic Regression Model Initialization Complete*")
+                    st.markdown("*SVM Model Initialization Complete*")
 
 
 
