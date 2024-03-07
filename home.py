@@ -8,6 +8,8 @@ import lime
 import matplotlib.pyplot as plt
 import time
 import io
+import tempfile
+import base64
 
 from session_utils import (saveSession, getSession)
 from sklearn.model_selection import train_test_split
@@ -22,6 +24,9 @@ from sklearn.preprocessing import label_binarize
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from lime import lime_tabular
+from lime.lime_tabular import LimeTabularExplainer
+# from lime.html import explanation_html
 
 import statsmodels.api as sm
 
@@ -40,7 +45,8 @@ if 'clicked' not in st.session_state:
                                    "confirmProgressInit": False,
                                    "click_generate_instance_tab0": True,
                                    "click_generate_instance_tab1": True,
-                                   "click_generate_instance_tab2": True}
+                                   "click_generate_instance_tab2": True,
+                                   "model_visual" : False}
 
 @st.cache_data(show_spinner=False)
 def readData(file_csv):
@@ -73,24 +79,24 @@ if (file_csv):
     file_name = file_csv.name
     st.session_state["file_csv"] = file_csv
     st.session_state["uploaded_file_name"] = file_name
-    if (file_name == "data_commuter.csv"):
-        df.loc[df["Kepuasan Hidup"] == "Sangat Tidak Puas", "Kepuasan Hidup"] = 0
-        df.loc[df["Kepuasan Hidup"] == "Biasa", "Kepuasan Hidup"] = 1
-        df.loc[df["Kepuasan Hidup"] == "Sangat Puas", "Kepuasan Hidup"] = 2
-        df = df.astype(float)
-    if (file_name == "patient_treatment.csv"):
-        df.loc[df["SOURCE"] == "out", "SOURCE"] = 0
-        df.loc[df["SOURCE"] == "in", "SOURCE"] = 1
-        df.loc[df["SEX"] == "M", "SEX"] = 0
-        df.loc[df["SEX"] == "F", "SEX"] = 1
-        df = df.astype(float)
-    if (file_name == "jogja_air_quality.csv"):
-        df.loc[df["Category"] == "Good", "Category"] = 0
-        df.loc[df["Category"] == "Moderate", "Category"] = 1
-        indexAge = df[(df['Category'] == 'Unhealthy')].index
-        df.drop(indexAge, inplace=True)
-        dummy = df['Critical Component'].str.get_dummies(sep=',').add_prefix('CC_')
-        df = pd.concat([df.drop(columns=['Critical Component']), dummy], axis=1)
+    # if (file_name == "data_commuter.csv"):
+    #     df.loc[df["Kepuasan Hidup"] == "Sangat Tidak Puas", "Kepuasan Hidup"] = 0
+    #     df.loc[df["Kepuasan Hidup"] == "Biasa", "Kepuasan Hidup"] = 1
+    #     df.loc[df["Kepuasan Hidup"] == "Sangat Puas", "Kepuasan Hidup"] = 2
+    #     df = df.astype(float)
+    # if (file_name == "patient_treatment.csv"):
+    #     df.loc[df["SOURCE"] == "out", "SOURCE"] = 0
+    #     df.loc[df["SOURCE"] == "in", "SOURCE"] = 1
+    #     df.loc[df["SEX"] == "M", "SEX"] = 0
+    #     df.loc[df["SEX"] == "F", "SEX"] = 1
+    #     df = df.astype(float)
+    # if (file_name == "jogja_air_quality.csv"):
+    #     df.loc[df["Category"] == "Good", "Category"] = 0
+    #     df.loc[df["Category"] == "Moderate", "Category"] = 1
+    #     indexAge = df[(df['Category'] == 'Unhealthy')].index
+    #     df.drop(indexAge, inplace=True)
+    #     dummy = df['Critical Component'].str.get_dummies(sep=',').add_prefix('CC_')
+    #     df = pd.concat([df.drop(columns=['Critical Component']), dummy], axis=1)
     st.session_state["file_csv"] = df
     st.session_state["uploaded_file"] = file_csv.name
     
@@ -128,6 +134,7 @@ if (file_csv):
 
     sbDropped = []
     sbLogregVisualized = []
+    unique_values = []
     sbKNNVisualized = []
     dataColumns = [df.columns[idx] for idx in range(len(df.columns))]
     dataColumnsX = [df.columns[idx] for idx in range(len(df.columns)-1)]
@@ -145,6 +152,30 @@ if (file_csv):
             st.caption("Select target feature to be predicted in the dataset")
             sbTarget = st.selectbox(
                 'Feature Name', columnOptions, index=len(columnOptions)-1, key="target_feature", )
+            if (file_name == "data_commuter.csv"):
+                unique_values = df[sbTarget].unique()
+                saveSession({"unique_values": unique_values})
+                df.loc[df["Kepuasan Hidup"] == "Sangat Tidak Puas", "Kepuasan Hidup"] = 0
+                # df.loc[df["Kepuasan Hidup"] == "Biasa", "Kepuasan Hidup"] = 1
+                df.loc[df["Kepuasan Hidup"] == "Sangat Puas", "Kepuasan Hidup"] = 1
+                df = df.astype(float)
+            if (file_name == "patient_treatment.csv"):
+                unique_values = df[sbTarget].unique()
+                saveSession({"unique_values": unique_values})
+                df.loc[df["SOURCE"] == "out", "SOURCE"] = 0
+                df.loc[df["SOURCE"] == "in", "SOURCE"] = 1
+                df.loc[df["SEX"] == "M", "SEX"] = 0
+                df.loc[df["SEX"] == "F", "SEX"] = 1
+                df = df.astype(float)
+            if (file_name == "jogja_air_quality.csv"):
+                unique_values = df[sbTarget].unique()
+                saveSession({"unique_values": unique_values})
+                df.loc[df["Category"] == "Good", "Category"] = 0
+                df.loc[df["Category"] == "Moderate", "Category"] = 1
+                indexAge = df[(df['Category'] == 'Unhealthy')].index
+                df.drop(indexAge, inplace=True)
+                dummy = df['Critical Component'].str.get_dummies(sep=',').add_prefix('CC_')
+                df = pd.concat([df.drop(columns=['Critical Component']), dummy], axis=1)
             # BUTTON PROCEED
             st.form_submit_button("Proceed", type="primary", on_click=clicked, args=["confirmTarget"])
     
@@ -225,8 +256,9 @@ if (file_csv):
                 # st.caption("Automatically find the most optimal Gamma for SVM model")  
             with col3:
                 st.write("#### Gamma value")
-                st.caption("Select Kernal")
+                st.caption("Select Kernel")
                 kernel_input = st.selectbox('Kernel', ['rbf', 'linear', 'poly', 'sigmoid'], key="svm_inp_kernel")
+                st.caption(":red[**WARNING!**] *Choose linear for further visualization!*")
                 # st.caption("*or*")
                 # svm_auto_gmma = st.checkbox("Auto Select", value=True, key="svm_auto_kernel")
                 # st.caption("Automatically find the most optimal kernel for SVM model")  
@@ -347,13 +379,15 @@ if (file_csv):
                     if (knn_auto_k):
                         st.markdown("**Best K :** *{}*".format(k_auto_neighbor))
                         st.pyplot(plt.gcf())
+                    else:
+                        st.markdown("K Neighbors : {}".format(k_input))
                     plt.clf()
                     test_point = x_test[0]
                     if (knn_auto_k):
                         distances, indices = knn.kneighbors([test_point], n_neighbors=k_auto_neighbor)
                     else:
                         distances, indices = knn.kneighbors([test_point], n_neighbors=k_input)
-                    plt.scatter(x_train[:, sbKNNVisualized_idx[0]], x_train[:, sbKNNVisualized_idx[1]], c=[(0.5, 0.5, 0.5, 0.1)], s=30, edgecolors=(0, 0, 0, 0.5), label='Training Data')
+                    plt.scatter(x_train[:, sbKNNVisualized_idx[0]], x_train[:, sbKNNVisualized_idx[1]], c=[(0.5, 0.5, 0.5, 0.1)], s=30, edgecolors=(0, 0, 0, 0.5), label='Other Data')
                     plt.scatter(x_train[indices[0], sbKNNVisualized_idx[0]], x_train[indices[0], sbKNNVisualized_idx[1]], c='cyan', marker='o', edgecolors='k', label='Nearest Neighbors')
                     plt.scatter(test_point[sbKNNVisualized_idx[0]], test_point[sbKNNVisualized_idx[1]], c='red', marker='x', edgecolors='k', s=100, label='Test Point')
                     plt.xlabel('Feature 1')
@@ -385,7 +419,7 @@ if (file_csv):
 
         with col3:
             st.subheader("SVM", divider='grey')
-            svm_model = SVC()
+            # svm_model = SVC()
             # param_grid = {'C': c_input, 'gamma': gamma_input, 'kernel': kernel_input}
             # c_input = c_input[0] if c_input else 1.0
             # gamma_input = gamma_input[0] if gamma_input else 0.1
@@ -418,6 +452,29 @@ if (file_csv):
                     st.pyplot(plt.gcf())
 
                     st.markdown("*SVM Model Initialization Complete*")
+        st.session_state["clicked"]["model_visual"] = True
+
+
+    if (getSession("clicked")["model_visual"]):
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.subheader("Lime Explainer", divider='grey')
+        x_train_lime = pd.DataFrame(x_train, columns = x.columns)
+        x_test_lime = pd.DataFrame(x_test, columns = x.columns)
+        class_names = getSession("unique_values")
+        feature_names = list(x_train_lime.columns)
+        load_knn = getSession("knn_model")
+        explainer = LimeTabularExplainer(x_train_lime.values, feature_names =
+                                        feature_names,
+                                        class_names = class_names,
+                                        mode = 'classification')
+        exp = explainer.explain_instance(data_row=x_test_lime.iloc[0], predict_fn=load_knn.predict_proba)
+        html_explanation = exp.as_html()
+        temp_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
+        temp_file_path.write(html_explanation.encode())
+        temp_file_path.close()
+        
+        # Display the HTML explanation using an iframe
+        st.markdown(f'<iframe src="data:text/html;base64,{base64.b64encode(open(temp_file_path.name, "rb").read()).decode()}" height="340" width="1000"></iframe>', unsafe_allow_html=True)
 
 
 
