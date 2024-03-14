@@ -1,4 +1,6 @@
 # pip install statsmodels
+# pip install plotly
+
 
 import streamlit as st
 import pandas as pd
@@ -10,6 +12,7 @@ import time
 import io
 import tempfile
 import base64
+import plotly.graph_objs as go
 
 from session_utils import (saveSession, getSession)
 from sklearn.model_selection import train_test_split
@@ -34,7 +37,7 @@ import statsmodels.api as sm
 # https://github.com/daniellewisDL/streamlit-cheat-sheet/blob/master/README.md
 st.set_page_config(layout="wide")
 st.set_option('deprecation.showPyplotGlobalUse', False)
-st.title("Home Page")
+st.title("Tabular Data Explanation")
 st.subheader("Upload Dataset File")
 file_csv = st.file_uploader("Browse CSV file", type=["csv"], on_change=lambda: st.session_state.clear())
 
@@ -46,7 +49,8 @@ if 'clicked' not in st.session_state:
                                    "click_generate_instance_tab0": True,
                                    "click_generate_instance_tab1": True,
                                    "click_generate_instance_tab2": True,
-                                   "model_visual" : False}
+                                   "model_visual" : False,
+                                   "initLIME" : False}
 
 @st.cache_data(show_spinner=False)
 def readData(file_csv):
@@ -97,17 +101,15 @@ if (file_csv):
     #     df.drop(indexAge, inplace=True)
     #     dummy = df['Critical Component'].str.get_dummies(sep=',').add_prefix('CC_')
     #     df = pd.concat([df.drop(columns=['Critical Component']), dummy], axis=1)
-    st.session_state["file_csv"] = df
+    st.session_state["df"] = df
     st.session_state["uploaded_file"] = file_csv.name
     
     with st.expander("Data Information"):
         st.write("Data Shape:", df.shape)
 
         col1, col2= st.columns(2)
-
         with col1:
             st.write("Data Columns:", df.columns)
-
         with col2:
             st.write("Data Types:", df.dtypes)
 
@@ -115,7 +117,6 @@ if (file_csv):
         with col1:
             st.subheader("Data Describe")
             st.write(df.describe())
-
         with col2:
             st.subheader("Data Header")
             st.write(df.head())
@@ -129,7 +130,6 @@ if (file_csv):
         #                 Back to Top
         #         </a>''', unsafe_allow_html=True)
         # st.write("")
-
     st.subheader("Feature Selection", divider="grey")
 
     sbDropped = []
@@ -218,10 +218,10 @@ if (file_csv):
                 st.write("#### KNN")
                 knn_auto_k = False
                 st.caption("Select K value for KNN model manually or automatically")
-                k_input = st.number_input('K Neighbor', key="knn_inp_k", min_value=2, value=5)
+                k_input = st.number_input('K Neighbor', key="knn_inp_k", min_value=2, max_value=40, value=5)
                 st.caption("*or*")
                 knn_auto_k = st.checkbox("Auto K", value=True, key="knn_auto_k")
-                st.caption("Automatically find the most optimal N for KNN model using KNN Regressor")  
+                st.caption("Automatically find the most optimal N for KNN model using KNN")  
             with col2:
                 st.write("#### Feature Visualization")
                 st.caption("Select features to be visualized in the dataset")
@@ -257,8 +257,9 @@ if (file_csv):
             with col3:
                 st.write("#### Gamma value")
                 st.caption("Select Kernel")
-                kernel_input = st.selectbox('Kernel', ['rbf', 'linear', 'poly', 'sigmoid'], key="svm_inp_kernel")
+                kernel_input = st.selectbox('Kernel', ['linear', 'rbf', 'poly', 'sigmoid'], key="svm_inp_kernel")
                 st.caption(":red[**WARNING!**] *Choose linear for further visualization!*")
+                saveSession({"kernel_input": kernel_input})
                 # st.caption("*or*")
                 # svm_auto_gmma = st.checkbox("Auto Select", value=True, key="svm_auto_kernel")
                 # st.caption("Automatically find the most optimal kernel for SVM model")  
@@ -340,7 +341,6 @@ if (file_csv):
                     st.pyplot(plt.gcf())
 
                     st.markdown("*Logistic Regression Model Initialization Complete*")
-
         with col2:
             st.subheader("KNN", divider='grey')
             # ==================
@@ -416,7 +416,6 @@ if (file_csv):
                     plt.legend(loc="lower right")
                     st.pyplot(plt.gcf())
                     st.markdown("*KNN Model Initialization Complete*")
-
         with col3:
             st.subheader("SVM", divider='grey')
             # svm_model = SVC()
@@ -454,30 +453,225 @@ if (file_csv):
                     st.markdown("*SVM Model Initialization Complete*")
         st.session_state["clicked"]["model_visual"] = True
 
+    if st.session_state.get("clicked", {}).get("model_visual", False):
+        st.subheader("LIME Initialization", divider="grey")
+        with st.form(key="form_lime_initialization"):
+            col1, col2 = st.columns(2)
+            with col1:
+                max_idx = len(pd.DataFrame(x_train, columns=x.columns))
+                lime_instance = st.number_input('Instance to be explained', key="lime_target", min_value=0, max_value=max_idx-1, step=1)
+            with col2:
+                max_idx = df.shape[1] - len(sbDropped)
+                column_num = st.number_input('Number of columns to be displayed', key="max_columns", min_value=1, value=max_idx-1, max_value=max_idx-1, step=1)
+            st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initLIME"])
+        st.session_state["lime_instance"] = lime_instance
+        st.session_state["column_num"] = column_num
+        st.session_state["clicked"]["initLIME"] = True
 
-    if (getSession("clicked")["model_visual"]):
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        st.subheader("Lime Explainer", divider='grey')
-        x_train_lime = pd.DataFrame(x_train, columns = x.columns)
-        x_test_lime = pd.DataFrame(x_test, columns = x.columns)
-        class_names = getSession("unique_values")
-        feature_names = list(x_train_lime.columns)
-        load_knn = getSession("knn_model")
-        explainer = LimeTabularExplainer(x_train_lime.values, feature_names =
-                                        feature_names,
-                                        class_names = class_names,
-                                        mode = 'classification')
-        exp = explainer.explain_instance(data_row=x_test_lime.iloc[0], predict_fn=load_knn.predict_proba)
-        html_explanation = exp.as_html()
-        temp_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
-        temp_file_path.write(html_explanation.encode())
-        temp_file_path.close()
-        
-        # Display the HTML explanation using an iframe
-        st.markdown(f'<iframe src="data:text/html;base64,{base64.b64encode(open(temp_file_path.name, "rb").read()).decode()}" height="340" width="1000"></iframe>', unsafe_allow_html=True)
+    if (getSession("clicked")["initLIME"]):
+        st.subheader("LIME Explainer", divider='grey')
+        with st.spinner("Loading...", ):
+            x_train_lime = pd.DataFrame(x_train, columns = x.columns)
+            x_test_lime = pd.DataFrame(x_test, columns = x.columns)
+            
+            class_names = getSession("unique_values")
+            feature_names = list(x_train_lime.columns)
+            knn_model = getSession("knn_model")
+            logreg_model = getSession("logreg_model")
+            svm_model = getSession("svm_model")
+            lime_instance = getSession("lime_instance")
+            column_num = getSession("column_num")
+            kernel_input = getSession("kernel_input")
+
+            # LIME for KNN =================================================================
+            explainer = LimeTabularExplainer(x_test_lime.values, feature_names =
+                                            feature_names,
+                                            class_names = class_names,
+                                            mode = 'classification')
+            exp = explainer.explain_instance(data_row=x_test_lime.iloc[lime_instance], 
+                                            predict_fn=logreg_model.predict_proba,
+                                            num_features=column_num)
+            html_explanation = exp.as_html()
+            temp_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
+            temp_file_path.write(html_explanation.encode())
+            temp_file_path.close()
+            # Display the HTML explanation using an iframe
+            st.markdown("#### Logistic Regression Model", unsafe_allow_html=True)
+            st.markdown(f'<iframe src="data:text/html;base64,{base64.b64encode(open(temp_file_path.name, "rb").read()).decode()}" height="340" width="1000"></iframe>', unsafe_allow_html=True)
+
+            # LIME for LOGREG =================================================================
+            explainer = LimeTabularExplainer(x_test_lime.values, feature_names =
+                                            feature_names,
+                                            class_names = class_names,
+                                            mode = 'classification')
+            exp = explainer.explain_instance(data_row=x_test_lime.iloc[lime_instance], 
+                                            predict_fn=knn_model.predict_proba,
+                                            num_features=column_num)
+            html_explanation = exp.as_html()
+            temp_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
+            temp_file_path.write(html_explanation.encode())
+            temp_file_path.close()
+            # Display the HTML explanation using an iframe
+            st.markdown("#### KNN Model", unsafe_allow_html=True)
+            st.markdown(f'<iframe src="data:text/html;base64,{base64.b64encode(open(temp_file_path.name, "rb").read()).decode()}" height="340" width="1000"></iframe>', unsafe_allow_html=True)
+
+            # LIME for SVM =================================================================
+            explainer = LimeTabularExplainer(x_test_lime.values, feature_names =
+                                            feature_names,
+                                            class_names = class_names,
+                                            mode = 'classification')
+            exp = explainer.explain_instance(data_row=x_test_lime.iloc[lime_instance], 
+                                            predict_fn=svm_model.predict_proba,
+                                            num_features=column_num)
+            html_explanation = exp.as_html()
+            temp_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
+            temp_file_path.write(html_explanation.encode())
+            temp_file_path.close()
+            # Display the HTML explanation using an iframe
+            st.markdown("#### SVM Model", unsafe_allow_html=True)
+            st.markdown(f'<iframe src="data:text/html;base64,{base64.b64encode(open(temp_file_path.name, "rb").read()).decode()}" height="340" width="1000"></iframe>', unsafe_allow_html=True)
 
 
+        st.subheader("Global Explanation", divider='grey')
+        # LOGREG
+        coefficients = logreg_model.coef_.ravel()
+        feature_names = list(x.columns)
+        coefficient_magnitudes = abs(coefficients)
+        sorted_data = pd.DataFrame({'feature': feature_names, 'magnitude': coefficient_magnitudes})
+        sorted_data = sorted_data.sort_values(by='magnitude', ascending=False)
 
+        # Create the horizontal bar plot using plotly
+        trace = go.Bar(
+            x=sorted_data['magnitude'],
+            y=sorted_data['feature'],
+            orientation='h',
+            marker=dict(color='#2ecc71'),  # Use emerald-like color
+            hoverinfo='x+y'  # Display both values on hover
+        )
+
+        # Customize layout
+        layout = go.Layout(
+            title='Logistic Regression Global Explanation: Coefficient Magnitudes',
+            titlefont=dict(color='black'),
+            xaxis=dict(
+                title='Coefficient Magnitude',
+                titlefont=dict(color='black'),  # Set x-axis title font color
+                tickfont=dict(color='black')  # Set x-axis tick labels color
+            ),
+            yaxis=dict(
+                title='Feature Name',
+                titlefont=dict(color='black'),  # Set y-axis title font color
+                tickfont=dict(color='black'),  # Set y-axis tick labels color
+                autorange="reversed"
+            ),
+            hovermode='closest',
+            plot_bgcolor='rgba(255, 255, 255, 1)',
+            paper_bgcolor='rgba(255, 255, 255, 1)',
+            title_x=0.15,  # Invert y-axis for top-down display
+        )
+        # Create a Figure object
+        fig = go.Figure(data=[trace], layout=layout)
+        # Display the plot in Streamlit
+        st.plotly_chart(fig)
+
+        # KNN
+        # Function to calculate mean distance to neighbors for each feature
+        def mean_distance_to_neighbors(X, neighbors_indices):
+            distances = []
+            for feature_idx in range(X.shape[1]):
+                feature_distances = []
+                for i in range(len(X)):
+                    neighbor_distances = [np.linalg.norm(X[i, feature_idx] - X[n, feature_idx]) for n in neighbors_indices[i]]
+                    mean_distance = np.mean(neighbor_distances)
+                    feature_distances.append(mean_distance)
+                distances.append(np.mean(feature_distances))
+            return distances
+        neighbors_indices = load_knn.kneighbors(x_train, return_distance=False)
+        mean_distances = mean_distance_to_neighbors(x_train, neighbors_indices)
+        data = list(zip(feature_names, mean_distances))
+        data.sort(key=lambda x: x[1], reverse=True)
+        sorted_feature_names = [x[0] for x in data]
+        sorted_mean_distances = [x[1] for x in data]
+        # Create a bar trace
+        trace = go.Bar(
+            x=sorted_mean_distances,
+            y=sorted_feature_names,
+            orientation='h',
+            marker=dict(color='#2ecc71'),  # Use hex code for emerald-like color
+            hoverinfo='x+y',  # Display both x (mean distance) and y (feature name) in hover info
+        )
+        # Create layout
+        layout = go.Layout(
+            title='KNN Global Explanation: Mean Distance to Neighbors for Each Feature',
+            titlefont=dict(color='black'),
+            xaxis=dict(
+                title='Mean Distance',
+                titlefont=dict(color='black'),  # Set x-axis title font color
+                tickfont=dict(color='black')  # Set x-axis tick labels color
+            ),
+            yaxis=dict(
+                title='Feature Name',
+                titlefont=dict(color='black'),  # Set y-axis title font color
+                tickfont=dict(color='black'),  # Set y-axis tick labels color
+                autorange="reversed"
+            ),
+            hovermode='closest',
+            plot_bgcolor='rgba(255, 255, 255, 1)',
+            paper_bgcolor='rgba(255, 255, 255, 1)',
+            title_x=0.15,
+        )
+        # Create figure
+        fig = go.Figure(data=[trace], layout=layout)
+        # Show plot
+        st.plotly_chart(fig)
+
+        # SVM
+        if kernel_input == "linear" :
+            coefficients = svm_model.coef_.ravel()
+            feature_names = list(x.columns)
+            coefficient_magnitudes = abs(coefficients)
+            sorted_data = pd.DataFrame({'feature': feature_names, 'magnitude': coefficient_magnitudes})
+            sorted_data = sorted_data.sort_values(by='magnitude', ascending=False)
+
+            trace = go.Bar(
+                x=sorted_data['magnitude'],
+                y=sorted_data['feature'],
+                orientation='h',
+                marker=dict(color='#2ecc71'),  # Use emerald-like color
+                hoverinfo='x+y'  # Display both values on hover
+            )
+
+            fig = go.Figure(go.Bar(
+                x=sorted_data['magnitude'],
+                y=sorted_data['feature'],
+                orientation='h',
+                marker=dict(color='#2ecc71'),  # Use emerald-like color
+            ))
+
+            # Customize layout
+            layout = go.Layout(
+                title='SVM Global Explanation: Coefficient Magnitudes',
+                titlefont=dict(color='black'),
+                xaxis=dict(
+                    title='Coefficient Magnitude',
+                    titlefont=dict(color='black'),  # Set x-axis title font color
+                    tickfont=dict(color='black')  # Set x-axis tick labels color
+                ),
+                yaxis=dict(
+                    title='Feature Name',
+                    titlefont=dict(color='black'),  # Set y-axis title font color
+                    tickfont=dict(color='black'),  # Set y-axis tick labels color
+                    autorange="reversed"
+                ),
+                hovermode='closest',
+                plot_bgcolor='rgba(255, 255, 255, 1)',
+                paper_bgcolor='rgba(255, 255, 255, 1)',
+                title_x=0.25,  # Invert y-axis for top-down display
+            )
+            # Create a Figure object
+            fig = go.Figure(data=[trace], layout=layout)
+            # Display the plot in Streamlit
+            st.plotly_chart(fig)
 
 
 
