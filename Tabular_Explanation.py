@@ -35,7 +35,7 @@ import statsmodels.api as sm
 
 # show_pages_from_config()
 # https://github.com/daniellewisDL/streamlit-cheat-sheet/blob/master/README.md
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", page_title="Tabular Explanation", page_icon="🗄")
 st.set_option('deprecation.showPyplotGlobalUse', False)
 st.title("Tabular Data Explanation")
 st.subheader("Upload Dataset File")
@@ -468,21 +468,162 @@ if (file_csv):
         st.session_state["column_num"] = column_num
         st.session_state["clicked"]["initLIME"] = True
 
+
     if (getSession("clicked")["initLIME"]):
+        x_train_lime = pd.DataFrame(x_train, columns = x.columns)
+        x_test_lime = pd.DataFrame(x_test, columns = x.columns)
+        
+        class_names = getSession("unique_values")
+        feature_names = list(x_train_lime.columns)
+        knn_model = getSession("knn_model")
+        logreg_model = getSession("logreg_model")
+        svm_model = getSession("svm_model")
+        lime_instance = getSession("lime_instance")
+        column_num = getSession("column_num")
+        kernel_input = getSession("kernel_input")
+        st.subheader("Global Explainer", divider='grey')
+        with st.spinner("Loading...", ):
+            # LOGREG
+            coefficients = logreg_model.coef_.ravel()
+            feature_names = list(x.columns)
+            coefficient_magnitudes = abs(coefficients)
+            sorted_data = pd.DataFrame({'feature': feature_names, 'magnitude': coefficient_magnitudes})
+            sorted_data = sorted_data.sort_values(by='magnitude', ascending=False)
+
+            # Create the horizontal bar plot using plotly
+            trace = go.Bar(
+                x=sorted_data['magnitude'],
+                y=sorted_data['feature'],
+                orientation='h',
+                marker=dict(color='#2ecc71'),  # Use emerald-like color
+                hoverinfo='x+y'  # Display both values on hover
+            )
+
+            # Customize layout
+            layout = go.Layout(
+                title='Logistic Regression Global Explanation: Coefficient Magnitudes',
+                titlefont=dict(color='black'),
+                xaxis=dict(
+                    title='Coefficient Magnitude',
+                    titlefont=dict(color='black'),  # Set x-axis title font color
+                    tickfont=dict(color='black')  # Set x-axis tick labels color
+                ),
+                yaxis=dict(
+                    title='Feature Name',
+                    titlefont=dict(color='black'),  # Set y-axis title font color
+                    tickfont=dict(color='black'),  # Set y-axis tick labels color
+                    autorange="reversed"
+                ),
+                hovermode='closest',
+                plot_bgcolor='rgba(255, 255, 255, 1)',
+                paper_bgcolor='rgba(255, 255, 255, 1)',
+                title_x=0.15,  # Invert y-axis for top-down display
+            )
+            # Create a Figure object
+            fig = go.Figure(data=[trace], layout=layout)
+            # Display the plot in Streamlit
+            st.plotly_chart(fig)
+
+            # KNN
+            def mean_distance_to_neighbors(X, neighbors_indices):
+                distances = []
+                for feature_idx in range(X.shape[1]):
+                    feature_distances = []
+                    for i in range(len(X)):
+                        neighbor_distances = [np.linalg.norm(X[i, feature_idx] - X[n, feature_idx]) for n in neighbors_indices[i]]
+                        mean_distance = np.mean(neighbor_distances)
+                        feature_distances.append(mean_distance)
+                    distances.append(np.mean(feature_distances))
+                return distances
+            neighbors_indices = load_knn.kneighbors(x_train, return_distance=False)
+            mean_distances = mean_distance_to_neighbors(x_train, neighbors_indices)
+            data = list(zip(feature_names, mean_distances))
+            data.sort(key=lambda x: x[1], reverse=True)
+            sorted_feature_names = [x[0] for x in data]
+            sorted_mean_distances = [x[1] for x in data]
+            # Create a bar trace
+            trace = go.Bar(
+                x=sorted_mean_distances,
+                y=sorted_feature_names,
+                orientation='h',
+                marker=dict(color='#2ecc71'),  # Use hex code for emerald-like color
+                hoverinfo='x+y',  # Display both x (mean distance) and y (feature name) in hover info
+            )
+            # Create layout
+            layout = go.Layout(
+                title='KNN Global Explanation: Mean Distance to Neighbors for Each Feature',
+                titlefont=dict(color='black'),
+                xaxis=dict(
+                    title='Mean Distance',
+                    titlefont=dict(color='black'),  # Set x-axis title font color
+                    tickfont=dict(color='black')  # Set x-axis tick labels color
+                ),
+                yaxis=dict(
+                    title='Feature Name',
+                    titlefont=dict(color='black'),  # Set y-axis title font color
+                    tickfont=dict(color='black'),  # Set y-axis tick labels color
+                    autorange="reversed"
+                ),
+                hovermode='closest',
+                plot_bgcolor='rgba(255, 255, 255, 1)',
+                paper_bgcolor='rgba(255, 255, 255, 1)',
+                title_x=0.15,
+            )
+            # Create figure
+            fig = go.Figure(data=[trace], layout=layout)
+            # Show plot
+            st.plotly_chart(fig)
+
+            # SVM
+            if kernel_input == "linear" :
+                coefficients = svm_model.coef_.ravel()
+                feature_names = list(x.columns)
+                coefficient_magnitudes = abs(coefficients)
+                sorted_data = pd.DataFrame({'feature': feature_names, 'magnitude': coefficient_magnitudes})
+                sorted_data = sorted_data.sort_values(by='magnitude', ascending=False)
+
+                trace = go.Bar(
+                    x=sorted_data['magnitude'],
+                    y=sorted_data['feature'],
+                    orientation='h',
+                    marker=dict(color='#2ecc71'),  # Use emerald-like color
+                    hoverinfo='x+y'  # Display both values on hover
+                )
+
+                fig = go.Figure(go.Bar(
+                    x=sorted_data['magnitude'],
+                    y=sorted_data['feature'],
+                    orientation='h',
+                    marker=dict(color='#2ecc71'),  # Use emerald-like color
+                ))
+
+                # Customize layout
+                layout = go.Layout(
+                    title='SVM Global Explanation: Coefficient Magnitudes',
+                    titlefont=dict(color='black'),
+                    xaxis=dict(
+                        title='Coefficient Magnitude',
+                        titlefont=dict(color='black'),  # Set x-axis title font color
+                        tickfont=dict(color='black')  # Set x-axis tick labels color
+                    ),
+                    yaxis=dict(
+                        title='Feature Name',
+                        titlefont=dict(color='black'),  # Set y-axis title font color
+                        tickfont=dict(color='black'),  # Set y-axis tick labels color
+                        autorange="reversed"
+                    ),
+                    hovermode='closest',
+                    plot_bgcolor='rgba(255, 255, 255, 1)',
+                    paper_bgcolor='rgba(255, 255, 255, 1)',
+                    title_x=0.25,  # Invert y-axis for top-down display
+                )
+                # Create a Figure object
+                fig = go.Figure(data=[trace], layout=layout)
+                # Display the plot in Streamlit
+                st.plotly_chart(fig)
+
         st.subheader("LIME Explainer", divider='grey')
         with st.spinner("Loading...", ):
-            x_train_lime = pd.DataFrame(x_train, columns = x.columns)
-            x_test_lime = pd.DataFrame(x_test, columns = x.columns)
-            
-            class_names = getSession("unique_values")
-            feature_names = list(x_train_lime.columns)
-            knn_model = getSession("knn_model")
-            logreg_model = getSession("logreg_model")
-            svm_model = getSession("svm_model")
-            lime_instance = getSession("lime_instance")
-            column_num = getSession("column_num")
-            kernel_input = getSession("kernel_input")
-
             # LIME for KNN =================================================================
             explainer = LimeTabularExplainer(x_test_lime.values, feature_names =
                                             feature_names,
@@ -530,149 +671,6 @@ if (file_csv):
             # Display the HTML explanation using an iframe
             st.markdown("#### SVM Model", unsafe_allow_html=True)
             st.markdown(f'<iframe src="data:text/html;base64,{base64.b64encode(open(temp_file_path.name, "rb").read()).decode()}" height="340" width="1000"></iframe>', unsafe_allow_html=True)
-
-
-        st.subheader("Global Explanation", divider='grey')
-        # LOGREG
-        coefficients = logreg_model.coef_.ravel()
-        feature_names = list(x.columns)
-        coefficient_magnitudes = abs(coefficients)
-        sorted_data = pd.DataFrame({'feature': feature_names, 'magnitude': coefficient_magnitudes})
-        sorted_data = sorted_data.sort_values(by='magnitude', ascending=False)
-
-        # Create the horizontal bar plot using plotly
-        trace = go.Bar(
-            x=sorted_data['magnitude'],
-            y=sorted_data['feature'],
-            orientation='h',
-            marker=dict(color='#2ecc71'),  # Use emerald-like color
-            hoverinfo='x+y'  # Display both values on hover
-        )
-
-        # Customize layout
-        layout = go.Layout(
-            title='Logistic Regression Global Explanation: Coefficient Magnitudes',
-            titlefont=dict(color='black'),
-            xaxis=dict(
-                title='Coefficient Magnitude',
-                titlefont=dict(color='black'),  # Set x-axis title font color
-                tickfont=dict(color='black')  # Set x-axis tick labels color
-            ),
-            yaxis=dict(
-                title='Feature Name',
-                titlefont=dict(color='black'),  # Set y-axis title font color
-                tickfont=dict(color='black'),  # Set y-axis tick labels color
-                autorange="reversed"
-            ),
-            hovermode='closest',
-            plot_bgcolor='rgba(255, 255, 255, 1)',
-            paper_bgcolor='rgba(255, 255, 255, 1)',
-            title_x=0.15,  # Invert y-axis for top-down display
-        )
-        # Create a Figure object
-        fig = go.Figure(data=[trace], layout=layout)
-        # Display the plot in Streamlit
-        st.plotly_chart(fig)
-
-        # KNN
-        # Function to calculate mean distance to neighbors for each feature
-        def mean_distance_to_neighbors(X, neighbors_indices):
-            distances = []
-            for feature_idx in range(X.shape[1]):
-                feature_distances = []
-                for i in range(len(X)):
-                    neighbor_distances = [np.linalg.norm(X[i, feature_idx] - X[n, feature_idx]) for n in neighbors_indices[i]]
-                    mean_distance = np.mean(neighbor_distances)
-                    feature_distances.append(mean_distance)
-                distances.append(np.mean(feature_distances))
-            return distances
-        neighbors_indices = load_knn.kneighbors(x_train, return_distance=False)
-        mean_distances = mean_distance_to_neighbors(x_train, neighbors_indices)
-        data = list(zip(feature_names, mean_distances))
-        data.sort(key=lambda x: x[1], reverse=True)
-        sorted_feature_names = [x[0] for x in data]
-        sorted_mean_distances = [x[1] for x in data]
-        # Create a bar trace
-        trace = go.Bar(
-            x=sorted_mean_distances,
-            y=sorted_feature_names,
-            orientation='h',
-            marker=dict(color='#2ecc71'),  # Use hex code for emerald-like color
-            hoverinfo='x+y',  # Display both x (mean distance) and y (feature name) in hover info
-        )
-        # Create layout
-        layout = go.Layout(
-            title='KNN Global Explanation: Mean Distance to Neighbors for Each Feature',
-            titlefont=dict(color='black'),
-            xaxis=dict(
-                title='Mean Distance',
-                titlefont=dict(color='black'),  # Set x-axis title font color
-                tickfont=dict(color='black')  # Set x-axis tick labels color
-            ),
-            yaxis=dict(
-                title='Feature Name',
-                titlefont=dict(color='black'),  # Set y-axis title font color
-                tickfont=dict(color='black'),  # Set y-axis tick labels color
-                autorange="reversed"
-            ),
-            hovermode='closest',
-            plot_bgcolor='rgba(255, 255, 255, 1)',
-            paper_bgcolor='rgba(255, 255, 255, 1)',
-            title_x=0.15,
-        )
-        # Create figure
-        fig = go.Figure(data=[trace], layout=layout)
-        # Show plot
-        st.plotly_chart(fig)
-
-        # SVM
-        if kernel_input == "linear" :
-            coefficients = svm_model.coef_.ravel()
-            feature_names = list(x.columns)
-            coefficient_magnitudes = abs(coefficients)
-            sorted_data = pd.DataFrame({'feature': feature_names, 'magnitude': coefficient_magnitudes})
-            sorted_data = sorted_data.sort_values(by='magnitude', ascending=False)
-
-            trace = go.Bar(
-                x=sorted_data['magnitude'],
-                y=sorted_data['feature'],
-                orientation='h',
-                marker=dict(color='#2ecc71'),  # Use emerald-like color
-                hoverinfo='x+y'  # Display both values on hover
-            )
-
-            fig = go.Figure(go.Bar(
-                x=sorted_data['magnitude'],
-                y=sorted_data['feature'],
-                orientation='h',
-                marker=dict(color='#2ecc71'),  # Use emerald-like color
-            ))
-
-            # Customize layout
-            layout = go.Layout(
-                title='SVM Global Explanation: Coefficient Magnitudes',
-                titlefont=dict(color='black'),
-                xaxis=dict(
-                    title='Coefficient Magnitude',
-                    titlefont=dict(color='black'),  # Set x-axis title font color
-                    tickfont=dict(color='black')  # Set x-axis tick labels color
-                ),
-                yaxis=dict(
-                    title='Feature Name',
-                    titlefont=dict(color='black'),  # Set y-axis title font color
-                    tickfont=dict(color='black'),  # Set y-axis tick labels color
-                    autorange="reversed"
-                ),
-                hovermode='closest',
-                plot_bgcolor='rgba(255, 255, 255, 1)',
-                paper_bgcolor='rgba(255, 255, 255, 1)',
-                title_x=0.25,  # Invert y-axis for top-down display
-            )
-            # Create a Figure object
-            fig = go.Figure(data=[trace], layout=layout)
-            # Display the plot in Streamlit
-            st.plotly_chart(fig)
-
 
 
 

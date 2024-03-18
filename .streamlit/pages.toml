@@ -1,13 +1,13 @@
 [[pages]]
-path = "home.py"
-name = "Home Page"
-icon = "🏠"
+path = "Tabular_Explanation.py"
+name = "Tabular Explanation"
+icon = "🗄"
 is_section = false
 
 [[pages]]
-path = "pages/dashboard.py"
-name = "Dashboard"
-icon = ":bar_chart:"
+path = "pages/Text_Explanation.py"
+name = "Text Explanation"
+icon = "📜"
 is_section = false
 
 [[pages]]
