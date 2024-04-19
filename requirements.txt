@@ -10,6 +10,8 @@ plotly
 wordcloud
 scikit-learn
 textblob
-beautifulsoup4
 base64
 tempfile
+time
+io
+statsmodels

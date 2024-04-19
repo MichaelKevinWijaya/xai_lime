@@ -13,7 +13,6 @@ import pandas as pd
 import seaborn as sns
 import nltk
 import re
-import spacy
 import re,string,unicodedata
 import plotly.graph_objects as go
 import tempfile
@@ -27,7 +26,6 @@ from nltk.stem.porter import PorterStemmer
 from wordcloud import WordCloud,STOPWORDS
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize,sent_tokenize
-from bs4 import BeautifulSoup
 from nltk.tokenize.toktok import ToktokTokenizer
 from sklearn.metrics import roc_curve, auc
 from nltk.stem import LancasterStemmer,WordNetLemmatizer
