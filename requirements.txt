@@ -1,0 +1,15 @@
+streamlit
+pandas
+numpy
+lime==0.2.0.1
+matplotlib
+seaborn
+nltk
+spacy
+plotly
+wordcloud
+scikit-learn
+textblob
+beautifulsoup4
+base64
+tempfile

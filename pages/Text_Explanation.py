@@ -11,7 +11,6 @@ from numpy.random import default_rng
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 import nltk
 import re
 import spacy
@@ -47,7 +46,6 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-import nltk
 # nltk.download('stopwords')
 # nltk.download('punkt')
 # nltk.download('averaged_perceptron_tagger')
