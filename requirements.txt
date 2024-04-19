@@ -10,5 +10,4 @@ plotly
 wordcloud
 scikit-learn
 textblob
-io
 statsmodels
