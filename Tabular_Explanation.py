@@ -166,6 +166,11 @@ if (file_csv):
                 df.loc[df["SOURCE"] == "in", "SOURCE"] = 1
                 df.loc[df["SEX"] == "M", "SEX"] = 0
                 df.loc[df["SEX"] == "F", "SEX"] = 1
+                df.rename(columns = {'THROMBOCYTE':'THROM'}, inplace = True)
+                df.rename(columns = {'HAEMATOCRIT':'HATOC'}, inplace = True)
+                df.rename(columns = {'HAEMOGLOBINS':'HAGLO'}, inplace = True)
+                df.rename(columns = {'ERYTHROCYTE':'ERYTH'}, inplace = True)
+                df.rename(columns = {'LEUCOCYTE':'LEUCO'}, inplace = True)
                 df = df.astype(float)
             if (file_name == "jogja_air_quality.csv"):
                 unique_values = df[sbTarget].unique()
@@ -623,6 +628,17 @@ if (file_csv):
                 st.plotly_chart(fig)
 
         st.subheader("LIME Explainer", divider='grey')
+        true_pred = y_test.iloc[lime_instance]
+        if(true_pred == 0):
+            if(file_name == "patient_treatment.csv"):
+                st.markdown("## True Prediction : " + "Out")
+            if(file_name == "jogja_air_quality.csv"):
+                st.markdown("## True Prediction : " + "Moderate")
+        else:
+            if(file_name == "patient_treatment.csv"):
+                st.markdown("## True Prediction : " + "In care patien")
+            if(file_name == "jogja_air_quality.csv"):
+                st.markdown("## True Prediction : " + "Good")
         with st.spinner("Loading...", ):
             # LIME for KNN =================================================================
             explainer = LimeTabularExplainer(x_test_lime.values, feature_names =
