@@ -38,7 +38,7 @@ from sklearn.metrics import classification_report,confusion_matrix,accuracy_scor
 from sklearn.model_selection import train_test_split
 from session_utils import (saveSession, getSession)
 from lime.lime_text import LimeTextExplainer
-from IPython.display import HTML
+# from IPython.display import HTML
 
 import os
 import warnings
@@ -496,7 +496,7 @@ if (file_csv):
                 idx = lime_instance
                 instance = test_x.iloc[idx : idx + 1].values[0]
                 highlighted_example = highlight_text_with_sentiment(instance, tfidf, coefficients)
-                HTML(highlighted_example)
+                # HTML(highlighted_example)
                 # HTML(highlighted_example)
                 st.markdown(highlighted_example, unsafe_allow_html=True)
 
