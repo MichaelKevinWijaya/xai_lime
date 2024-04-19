@@ -15,7 +15,6 @@ import plotly.graph_objs as go
 from session_utils import (saveSession, getSession)
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-from st_pages import show_pages_from_config
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
