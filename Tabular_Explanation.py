@@ -8,7 +8,6 @@ import seaborn as sns
 import numpy as np
 import lime
 import matplotlib.pyplot as plt
-import time
 import io
 import tempfile
 import base64
@@ -687,29 +686,4 @@ if (file_csv):
             # Display the HTML explanation using an iframe
             st.markdown("#### SVM Model", unsafe_allow_html=True)
             st.markdown(f'<iframe src="data:text/html;base64,{base64.b64encode(open(temp_file_path.name, "rb").read()).decode()}" height="340" width="1000"></iframe>', unsafe_allow_html=True)
-
-
-
-
-# with st.spinner("Loading...", ):
-#     time.sleep(5)
-# st.markdown("aaaaa")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
