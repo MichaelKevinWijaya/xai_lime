@@ -346,38 +346,38 @@ if (file_csv):
                         st.markdown("*Logistic Regression Model Initialization Complete*")
         with col2:
             st.subheader("KNN", divider='grey')
-            # ==================
-            # Plot error rate  
-            # ==================
-            error_rate = []
-            list_score = []
-            for i in range(1,40):
-                knn = KNeighborsClassifier(n_neighbors=i, weights="distance")
-                knn.fit(x_train,y_train)
-                pred_i = knn.predict(x_test)
-                error_rate.append(np.mean(pred_i != y_test))
-                list_score.append(knn.score(x_test, y_test))
-                knn_score = knn.score(x_test, y_test)
+            with st.spinner("Loading...", ):
+                # ==================
+                # Plot error rate  
+                # ==================
+                error_rate = []
+                list_score = []
+                for i in range(1,40):
+                    knn = KNeighborsClassifier(n_neighbors=i, weights="distance")
+                    knn.fit(x_train,y_train)
+                    pred_i = knn.predict(x_test)
+                    error_rate.append(np.mean(pred_i != y_test))
+                    list_score.append(knn.score(x_test, y_test))
+                    knn_score = knn.score(x_test, y_test)
+                
+                plt.figure(figsize=(10,6))
+                plt.plot(range(1,40),error_rate,color='blue', linestyle='dashed', marker='o', markerfacecolor='red', markersize=10)
+                plt.title('Error Rate vs. K Value')
+                plt.xlabel('K')
+                plt.ylabel('Error Rate')
+                
+                # Get the best K
+                k_auto_neighbor, k_neighbor_score = getKNN_k(x_train, y_train, x_test, y_test, list(x.columns))
+                if (knn_auto_k):
+                    load_knn = KNeighborsClassifier(n_neighbors=k_auto_neighbor, weights="distance")
+                else:
+                    load_knn = KNeighborsClassifier(n_neighbors=k_input, weights="distance")
+                load_knn.fit(x_train, y_train)
+                y_pred_knn = load_knn.predict(x_test)
+                load_knn_score = load_knn.score(x_test, y_test)
+                saveSession({"knn_model": load_knn, "knn_score": load_knn_score, "k_neighbor": k_auto_neighbor, "k_neighbor_score": k_neighbor_score})
             
-            plt.figure(figsize=(10,6))
-            plt.plot(range(1,40),error_rate,color='blue', linestyle='dashed', marker='o', markerfacecolor='red', markersize=10)
-            plt.title('Error Rate vs. K Value')
-            plt.xlabel('K')
-            plt.ylabel('Error Rate')
-            
-            # Get the best K
-            k_auto_neighbor, k_neighbor_score = getKNN_k(x_train, y_train, x_test, y_test, list(x.columns))
-            if (knn_auto_k):
-                load_knn = KNeighborsClassifier(n_neighbors=k_auto_neighbor, weights="distance")
-            else:
-                load_knn = KNeighborsClassifier(n_neighbors=k_input, weights="distance")
-            load_knn.fit(x_train, y_train)
-            y_pred_knn = load_knn.predict(x_test)
-            load_knn_score = load_knn.score(x_test, y_test)
-            saveSession({"knn_model": load_knn, "knn_score": load_knn_score, "k_neighbor": k_auto_neighbor, "k_neighbor_score": k_neighbor_score})
-        
-            if (getSession("clicked")["initKNNModel"] and len(sbKNNVisualized) == 2):
-                with st.spinner("Loading...", ):
+                if (getSession("clicked")["initKNNModel"] and len(sbKNNVisualized) == 2):
                     with st.expander("Show KNN Information"):
                         st.markdown("**Score :** *{:.3f}*".format(load_knn_score))
                         if (knn_auto_k):
@@ -427,14 +427,14 @@ if (file_csv):
             # c_input = c_input[0] if c_input else 1.0
             # gamma_input = gamma_input[0] if gamma_input else 0.1
             # kernel_input = kernel_input[0] if kernel_input else 'rbf'
-            svm_model = SVC(C=c_input, gamma=gamma_input, kernel=kernel_input, probability=True)
-            svm_model.fit(x_train, y_train)
-            y_pred = svm_model.predict(x_test)
-            svm_accuracy = accuracy_score(y_test, y_pred)
-            saveSession({"svm_model": svm_model, "svm_score": svm_accuracy})
+            with st.spinner("Loading...", ):
+                svm_model = SVC(C=c_input, gamma=gamma_input, kernel=kernel_input, probability=True)
+                svm_model.fit(x_train, y_train)
+                y_pred = svm_model.predict(x_test)
+                svm_accuracy = accuracy_score(y_test, y_pred)
+                saveSession({"svm_model": svm_model, "svm_score": svm_accuracy})
 
-            if (getSession("clicked")["initSVMModel"]):
-                with st.spinner("Loading...", ):
+                if (getSession("clicked")["initSVMModel"]):
                     with st.expander("Show SVM Information"):
                         st.markdown("**Score :** *{:.3f}*".format(svm_accuracy))
                         probabilities = svm_model.predict_proba(x_test)
@@ -612,7 +612,6 @@ if (file_csv):
                 max_idx = df.shape[1] - len(sbDropped)
                 column_num = st.number_input('Number of columns to be displayed', key="max_columns", min_value=1, value=max_idx-1, max_value=max_idx-1, step=1)
             st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initLIME"])
-        st.write(max_idx)
         st.session_state["lime_instance"] = lime_instance
         st.session_state["column_num"] = column_num
         st.session_state["clicked"]["initLIME"] = True
