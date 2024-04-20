@@ -163,11 +163,11 @@ if (file_csv):
                 df.loc[df["SOURCE"] == "in", "SOURCE"] = 1
                 df.loc[df["SEX"] == "M", "SEX"] = 0
                 df.loc[df["SEX"] == "F", "SEX"] = 1
-                df.rename(columns = {'THROMBOCYTE':'THROM'}, inplace = True)
-                df.rename(columns = {'HAEMATOCRIT':'HATOC'}, inplace = True)
-                df.rename(columns = {'HAEMOGLOBINS':'HAGLO'}, inplace = True)
-                df.rename(columns = {'ERYTHROCYTE':'ERYTH'}, inplace = True)
-                df.rename(columns = {'LEUCOCYTE':'LEUCO'}, inplace = True)
+                # df.rename(columns = {'THROMBOCYTE':'THROM'}, inplace = True)
+                # df.rename(columns = {'HAEMATOCRIT':'HATOC'}, inplace = True)
+                # df.rename(columns = {'HAEMOGLOBINS':'HAGLO'}, inplace = True)
+                # df.rename(columns = {'ERYTHROCYTE':'ERYTH'}, inplace = True)
+                # df.rename(columns = {'LEUCOCYTE':'LEUCO'}, inplace = True)
                 df = df.astype(float)
             if (file_name == "jogja_air_quality.csv"):
                 unique_values = df[sbTarget].unique()
@@ -455,35 +455,12 @@ if (file_csv):
                     st.markdown("*SVM Model Initialization Complete*")
         st.session_state["clicked"]["model_visual"] = True
 
-    if st.session_state.get("clicked", {}).get("model_visual", False):
-        st.subheader("LIME Initialization", divider="grey")
-        with st.form(key="form_lime_initialization"):
-            col1, col2 = st.columns(2)
-            with col1:
-                max_idx = len(pd.DataFrame(x_train, columns=x.columns))
-                lime_instance = st.number_input('Instance to be explained', key="lime_target", min_value=0, max_value=max_idx-1, step=1)
-            with col2:
-                max_idx = df.shape[1] - len(sbDropped)
-                column_num = st.number_input('Number of columns to be displayed', key="max_columns", min_value=1, value=max_idx-1, max_value=max_idx-1, step=1)
-            st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initLIME"])
-        st.session_state["lime_instance"] = lime_instance
-        st.session_state["column_num"] = column_num
-        st.session_state["clicked"]["initLIME"] = True
-
-
-    if (getSession("clicked")["initLIME"]):
-        x_train_lime = pd.DataFrame(x_train, columns = x.columns)
-        x_test_lime = pd.DataFrame(x_test, columns = x.columns)
-        
-        class_names = getSession("unique_values")
-        feature_names = list(x_train_lime.columns)
+    if st.session_state.get("clicked", {}).get("model_visual", True):
+        st.subheader("Global Explainer", divider='grey')
         knn_model = getSession("knn_model")
         logreg_model = getSession("logreg_model")
         svm_model = getSession("svm_model")
-        lime_instance = getSession("lime_instance")
-        column_num = getSession("column_num")
         kernel_input = getSession("kernel_input")
-        st.subheader("Global Explainer", divider='grey')
         with st.spinner("Loading...", ):
             # LOGREG
             coefficients = logreg_model.coef_.ravel()
@@ -624,16 +601,45 @@ if (file_csv):
                 # Display the plot in Streamlit
                 st.plotly_chart(fig)
 
+    if st.session_state.get("clicked", {}).get("model_visual", True):
+        st.subheader("LIME Initialization", divider="grey")
+        with st.form(key="form_lime_initialization"):
+            col1, col2 = st.columns(2)
+            with col1:
+                max_idx = len(pd.DataFrame(x_train, columns=x.columns))
+                lime_instance = st.number_input('Instance to be explained', key="lime_target", min_value=0, max_value=max_idx-1, step=1)
+            with col2:
+                max_idx = df.shape[1] - len(sbDropped)
+                column_num = st.number_input('Number of columns to be displayed', key="max_columns", min_value=1, value=max_idx-1, max_value=max_idx-1, step=1)
+            st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initLIME"])
+        st.session_state["lime_instance"] = lime_instance
+        st.session_state["column_num"] = column_num
+        st.session_state["clicked"]["initLIME"] = True
+
+
+    if (getSession("clicked")["initLIME"]):
+        x_train_lime = pd.DataFrame(x_train, columns = x.columns)
+        x_test_lime = pd.DataFrame(x_test, columns = x.columns)
+        
+        class_names = getSession("unique_values")
+        feature_names = list(x_train_lime.columns)
+        knn_model = getSession("knn_model")
+        logreg_model = getSession("logreg_model")
+        svm_model = getSession("svm_model")
+        lime_instance = getSession("lime_instance")
+        column_num = getSession("column_num")
+        kernel_input = getSession("kernel_input")
+
         st.subheader("LIME Explainer", divider='grey')
         true_pred = y_test.iloc[lime_instance]
         if(true_pred == 0):
             if(file_name == "patient_treatment.csv"):
-                st.markdown("## True Prediction : " + "Out")
+                st.markdown("## True Prediction : " + "Out care patient")
             if(file_name == "jogja_air_quality.csv"):
                 st.markdown("## True Prediction : " + "Moderate")
         else:
             if(file_name == "patient_treatment.csv"):
-                st.markdown("## True Prediction : " + "In care patien")
+                st.markdown("## True Prediction : " + "In care patient")
             if(file_name == "jogja_air_quality.csv"):
                 st.markdown("## True Prediction : " + "Good")
         with st.spinner("Loading...", ):
