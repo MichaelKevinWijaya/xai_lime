@@ -178,6 +178,7 @@ if (file_csv):
                 df.drop(indexAge, inplace=True)
                 dummy = df['Critical Component'].str.get_dummies(sep=',').add_prefix('CC_')
                 df = pd.concat([df.drop(columns=['Critical Component']), dummy], axis=1)
+                st.write(df.shape)
             # BUTTON PROCEED
             st.form_submit_button("Proceed", type="primary", on_click=clicked, args=["confirmTarget"])
     
@@ -302,47 +303,47 @@ if (file_csv):
             saveSession({"logreg_model": logreg, "logreg_score": logreg_score})
 
             if (getSession("clicked")["initLogregModel"] and len(sbLogregVisualized) == 2):
-                with st.expander("Show Logistic Regression Information"):
-                    st.markdown("**Score :** *{:.3f}*".format(logreg_score))
-                    # Logistic Regression Model
-                    feat_x = df[sbLogregVisualized[0]]
-                    feat_y = df[sbLogregVisualized[1]]
-                    feat_y = feat_y.astype('int')
-                    # Fit logistic regression model
-                    X = sm.add_constant(feat_x)  # Add constant for intercept
-                    model = sm.Logit(feat_y, X)
-                    result = model.fit()
-                    # Get the logistic regression line
-                    x_values = np.linspace(feat_x.min(), feat_x.max(), 100)
-                    y_values = result.predict(sm.add_constant(x_values))
-                    # Plot using seaborn
-                    fig, ax = plt.subplots()
-                    sns.scatterplot(x=feat_x, y=feat_y, ax=ax)
-                    ax.plot(x_values, y_values)
-                    ax.set_xlabel(sbLogregVisualized[0])
-                    ax.set_ylabel(sbLogregVisualized[1])
-                    ax.legend()
-                    st.pyplot(fig)
+                with st.spinner("Loading...", ):
+                    with st.expander("Show Logistic Regression Information"):
+                        st.markdown("**Score :** *{:.3f}*".format(logreg_score))
+                        # Logistic Regression Model
+                        feat_x = df[sbLogregVisualized[0]]
+                        feat_y = df[sbLogregVisualized[1]]
+                        feat_y = feat_y.astype('int')
+                        # Fit logistic regression model
+                        X = sm.add_constant(feat_x)  # Add constant for intercept
+                        model = sm.Logit(feat_y, X)
+                        result = model.fit()
+                        # Get the logistic regression line
+                        x_values = np.linspace(feat_x.min(), feat_x.max(), 100)
+                        y_values = result.predict(sm.add_constant(x_values))
+                        # Plot using seaborn
+                        fig, ax = plt.subplots()
+                        sns.scatterplot(x=feat_x, y=feat_y, ax=ax)
+                        ax.plot(x_values, y_values)
+                        ax.set_xlabel(sbLogregVisualized[0])
+                        ax.set_ylabel(sbLogregVisualized[1])
+                        ax.legend()
+                        st.pyplot(fig)
 
-                    # AUC/ROC Curve
-                    probabilities = logreg.predict_proba(x_test)
-                    # fpr, tpr, _ = roc_curve(y_test, y_pred_knn)
-                    fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
-                    roc_auc = auc(fpr, tpr)
-                    # Plot ROC curve
-                    plt.figure()
-                    lw = 2
-                    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-                    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
-                    plt.xlim([0.0, 1.0])
-                    plt.ylim([0.0, 1.05])
-                    plt.xlabel('False Positive Rate')
-                    plt.ylabel('True Positive Rate')
-                    plt.title('Receiver Operating Characteristic (ROC) Curve')
-                    plt.legend(loc="lower right")
-                    st.pyplot(plt.gcf())
-
-                    st.markdown("*Logistic Regression Model Initialization Complete*")
+                        # AUC/ROC Curve
+                        probabilities = logreg.predict_proba(x_test)
+                        # fpr, tpr, _ = roc_curve(y_test, y_pred_knn)
+                        fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
+                        roc_auc = auc(fpr, tpr)
+                        # Plot ROC curve
+                        plt.figure()
+                        lw = 2
+                        plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+                        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
+                        plt.xlim([0.0, 1.0])
+                        plt.ylim([0.0, 1.05])
+                        plt.xlabel('False Positive Rate')
+                        plt.ylabel('True Positive Rate')
+                        plt.title('Receiver Operating Characteristic (ROC) Curve')
+                        plt.legend(loc="lower right")
+                        st.pyplot(plt.gcf())
+                        st.markdown("*Logistic Regression Model Initialization Complete*")
         with col2:
             st.subheader("KNN", divider='grey')
             # ==================
@@ -376,48 +377,49 @@ if (file_csv):
             saveSession({"knn_model": load_knn, "knn_score": load_knn_score, "k_neighbor": k_auto_neighbor, "k_neighbor_score": k_neighbor_score})
         
             if (getSession("clicked")["initKNNModel"] and len(sbKNNVisualized) == 2):
-                with st.expander("Show KNN Information"):
-                    st.markdown("**Score :** *{:.3f}*".format(load_knn_score))
-                    if (knn_auto_k):
-                        st.markdown("**Best K :** *{}*".format(k_auto_neighbor))
+                with st.spinner("Loading...", ):
+                    with st.expander("Show KNN Information"):
+                        st.markdown("**Score :** *{:.3f}*".format(load_knn_score))
+                        if (knn_auto_k):
+                            st.markdown("**Best K :** *{}*".format(k_auto_neighbor))
+                            st.pyplot(plt.gcf())
+                        else:
+                            st.markdown("K Neighbors : {}".format(k_input))
+                        plt.clf()
+                        test_point = x_test[0]
+                        if (knn_auto_k):
+                            distances, indices = knn.kneighbors([test_point], n_neighbors=k_auto_neighbor)
+                        else:
+                            distances, indices = knn.kneighbors([test_point], n_neighbors=k_input)
+                        plt.scatter(x_train[:, sbKNNVisualized_idx[0]], x_train[:, sbKNNVisualized_idx[1]], c=[(0.5, 0.5, 0.5, 0.1)], s=30, edgecolors=(0, 0, 0, 0.5), label='Other Data')
+                        plt.scatter(x_train[indices[0], sbKNNVisualized_idx[0]], x_train[indices[0], sbKNNVisualized_idx[1]], c='cyan', marker='o', edgecolors='k', label='Nearest Neighbors')
+                        plt.scatter(test_point[sbKNNVisualized_idx[0]], test_point[sbKNNVisualized_idx[1]], c='red', marker='x', edgecolors='k', s=100, label='Test Point')
+                        plt.xlabel('Feature 1')
+                        plt.ylabel('Feature 2')
+                        plt.title('Nearest Neighbors Visualization')
+                        plt.legend()
                         st.pyplot(plt.gcf())
-                    else:
-                        st.markdown("K Neighbors : {}".format(k_input))
-                    plt.clf()
-                    test_point = x_test[0]
-                    if (knn_auto_k):
-                        distances, indices = knn.kneighbors([test_point], n_neighbors=k_auto_neighbor)
-                    else:
-                        distances, indices = knn.kneighbors([test_point], n_neighbors=k_input)
-                    plt.scatter(x_train[:, sbKNNVisualized_idx[0]], x_train[:, sbKNNVisualized_idx[1]], c=[(0.5, 0.5, 0.5, 0.1)], s=30, edgecolors=(0, 0, 0, 0.5), label='Other Data')
-                    plt.scatter(x_train[indices[0], sbKNNVisualized_idx[0]], x_train[indices[0], sbKNNVisualized_idx[1]], c='cyan', marker='o', edgecolors='k', label='Nearest Neighbors')
-                    plt.scatter(test_point[sbKNNVisualized_idx[0]], test_point[sbKNNVisualized_idx[1]], c='red', marker='x', edgecolors='k', s=100, label='Test Point')
-                    plt.xlabel('Feature 1')
-                    plt.ylabel('Feature 2')
-                    plt.title('Nearest Neighbors Visualization')
-                    plt.legend()
-                    st.pyplot(plt.gcf())
 
-                    # AUC/ROC Curve
-                    probabilities = knn.predict_proba(x_test)
-                    # fpr, tpr, _ = roc_curve(y_test, y_pred_knn)
-                    fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
-                    roc_auc = auc(fpr, tpr)
+                        # AUC/ROC Curve
+                        probabilities = knn.predict_proba(x_test)
+                        # fpr, tpr, _ = roc_curve(y_test, y_pred_knn)
+                        fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
+                        roc_auc = auc(fpr, tpr)
 
-                    # Plot ROC curve
-                    plt.figure()
-                    lw = 2
-                    plt.plot(fpr, tpr, color='darkorange',
-                            lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-                    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
-                    plt.xlim([0.0, 1.0])
-                    plt.ylim([0.0, 1.05])
-                    plt.xlabel('False Positive Rate')
-                    plt.ylabel('True Positive Rate')
-                    plt.title('Receiver Operating Characteristic (ROC) Curve')
-                    plt.legend(loc="lower right")
-                    st.pyplot(plt.gcf())
-                    st.markdown("*KNN Model Initialization Complete*")
+                        # Plot ROC curve
+                        plt.figure()
+                        lw = 2
+                        plt.plot(fpr, tpr, color='darkorange',
+                                lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+                        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
+                        plt.xlim([0.0, 1.0])
+                        plt.ylim([0.0, 1.05])
+                        plt.xlabel('False Positive Rate')
+                        plt.ylabel('True Positive Rate')
+                        plt.title('Receiver Operating Characteristic (ROC) Curve')
+                        plt.legend(loc="lower right")
+                        st.pyplot(plt.gcf())
+                        st.markdown("*KNN Model Initialization Complete*")
         with col3:
             st.subheader("SVM", divider='grey')
             # svm_model = SVC()
@@ -432,27 +434,25 @@ if (file_csv):
             saveSession({"svm_model": svm_model, "svm_score": svm_accuracy})
 
             if (getSession("clicked")["initSVMModel"]):
-                with st.expander("Show SVM Information"):
-                    st.markdown("**Score :** *{:.3f}*".format(svm_accuracy))
-
-                    probabilities = svm_model.predict_proba(x_test)
-                    fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
-                    roc_auc = auc(fpr, tpr)
-
-                    # Plot ROC curve
-                    plt.figure()
-                    lw = 2
-                    plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-                    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
-                    plt.xlim([0.0, 1.0])
-                    plt.ylim([0.0, 1.05])
-                    plt.xlabel('False Positive Rate')
-                    plt.ylabel('True Positive Rate')
-                    plt.title('Receiver Operating Characteristic (ROC) Curve')
-                    plt.legend(loc="lower right")
-                    st.pyplot(plt.gcf())
-
-                    st.markdown("*SVM Model Initialization Complete*")
+                with st.spinner("Loading...", ):
+                    with st.expander("Show SVM Information"):
+                        st.markdown("**Score :** *{:.3f}*".format(svm_accuracy))
+                        probabilities = svm_model.predict_proba(x_test)
+                        fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
+                        roc_auc = auc(fpr, tpr)
+                        # Plot ROC curve
+                        plt.figure()
+                        lw = 2
+                        plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+                        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
+                        plt.xlim([0.0, 1.0])
+                        plt.ylim([0.0, 1.05])
+                        plt.xlabel('False Positive Rate')
+                        plt.ylabel('True Positive Rate')
+                        plt.title('Receiver Operating Characteristic (ROC) Curve')
+                        plt.legend(loc="lower right")
+                        st.pyplot(plt.gcf())
+                        st.markdown("*SVM Model Initialization Complete*")
         st.session_state["clicked"]["model_visual"] = True
 
     if st.session_state.get("clicked", {}).get("model_visual", True):
@@ -612,6 +612,7 @@ if (file_csv):
                 max_idx = df.shape[1] - len(sbDropped)
                 column_num = st.number_input('Number of columns to be displayed', key="max_columns", min_value=1, value=max_idx-1, max_value=max_idx-1, step=1)
             st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initLIME"])
+        st.write(max_idx)
         st.session_state["lime_instance"] = lime_instance
         st.session_state["column_num"] = column_num
         st.session_state["clicked"]["initLIME"] = True
