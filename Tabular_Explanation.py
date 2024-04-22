@@ -178,7 +178,7 @@ if (file_csv):
                 df.drop(indexAge, inplace=True)
                 dummy = df['Critical Component'].str.get_dummies(sep=',').add_prefix('CC_')
                 df = pd.concat([df.drop(columns=['Critical Component']), dummy], axis=1)
-                st.write(df.shape)
+                # st.write(df.shape)
             # BUTTON PROCEED
             st.form_submit_button("Proceed", type="primary", on_click=clicked, args=["confirmTarget"])
     
