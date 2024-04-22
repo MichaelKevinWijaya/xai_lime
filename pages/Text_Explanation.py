@@ -150,7 +150,7 @@ def lime_explanation(model, instance, column_num):
     def predict_proba_wrapper(texts):
         return knn_model.predict_proba(tfidf.transform(texts))
     exp = explainer.explain_instance(instance[0], predict_proba_wrapper, num_features=column_num)
-    exp.show_in_notebook(text=True)
+    # exp.show_in_notebook(text=True)
     html_explanation = exp.as_html()
     temp_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
     temp_file_path.write(html_explanation.encode())
@@ -512,7 +512,7 @@ if (file_csv):
             def predict_proba_wrapper(texts):
                 return logreg_model.predict_proba(tfidf.transform(texts))
             exp = explainer.explain_instance(instance[0], predict_proba_wrapper, num_features=column_num)
-            exp.show_in_notebook(text=True)
+            # exp.show_in_notebook(text=True)
             html_explanation = exp.as_html()
             temp_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
             temp_file_path.write(html_explanation.encode())
@@ -524,7 +524,7 @@ if (file_csv):
             def predict_proba_wrapper(texts):
                 return knn_model.predict_proba(tfidf.transform(texts))
             exp = explainer.explain_instance(instance[0], predict_proba_wrapper, num_features=column_num)
-            exp.show_in_notebook(text=True)
+            # exp.show_in_notebook(text=True)
             html_explanation = exp.as_html()
             temp_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
             temp_file_path.write(html_explanation.encode())
@@ -536,7 +536,7 @@ if (file_csv):
             def predict_proba_wrapper(texts):
                 return svm_model.predict_proba(tfidf.transform(texts))
             exp = explainer.explain_instance(instance[0], predict_proba_wrapper, num_features=column_num)
-            exp.show_in_notebook(text=True)
+            # exp.show_in_notebook(text=True)
             html_explanation = exp.as_html()
             temp_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
             temp_file_path.write(html_explanation.encode())
