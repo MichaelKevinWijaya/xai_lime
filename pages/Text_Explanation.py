@@ -489,6 +489,47 @@ if (file_csv):
                 highlighted_example = highlight_text_with_sentiment(instance, tfidf, coefficients)
                 # HTML(highlighted_example)
                 st.markdown(highlighted_example, unsafe_allow_html=True)
+                # GLOBAL PLOT
+                feature_names = tfidf.get_feature_names_out()
+                sorted_indices = np.argsort(np.abs(coefficients))
+                sorted_feature_names = [feature_names[idx] for idx in sorted_indices]
+                sorted_coefficients = coefficients[sorted_indices]
+                top_n = 15
+                top_feature_names = sorted_feature_names[-top_n:]
+                top_coefficients = sorted_coefficients[-top_n:]
+                colors = ['royalblue' if coef < 0 else 'darkorange' for coef in top_coefficients]
+
+                # Create a horizontal bar plot using Plotly
+                fig = go.Figure(go.Bar(
+                    x=top_coefficients,
+                    y=top_feature_names,
+                    orientation='h',
+                    marker=dict(color=colors)
+                ))
+
+                # Customize layout
+                fig.update_layout(
+                    title='Global Explanation: Coefficient Magnitudes (LogReg)',
+                    # xaxis_title='Coefficient Magnitude',
+                    # yaxis_title='Word',
+                    xaxis=dict(
+                        title='Coefficient Magnitude',
+                        titlefont=dict(color='black'),  # Set x-axis title font color
+                        tickfont=dict(color='black')  # Set x-axis tick labels color
+                    ),
+                    yaxis=dict(
+                        title='Word',
+                        titlefont=dict(color='black'),  # Set y-axis title font color
+                        tickfont=dict(color='black'),  # Set y-axis tick labels color
+                        autorange="reversed"
+                    ),
+                    plot_bgcolor='rgba(255, 255, 255, 1)',
+                    paper_bgcolor='rgba(255, 255, 255, 1)',
+                    titlefont=dict(color='black'),
+                    hovermode='closest',
+                    title_x=0.24,
+                )
+                st.plotly_chart(fig)
                 st.markdown("---")
                 # SVM
                 st.markdown("#### SVM Model")
@@ -497,9 +538,48 @@ if (file_csv):
                 instance = test_x.iloc[idx : idx + 1].values[0]
                 highlighted_example = highlight_text_with_sentiment(instance, tfidf, coefficients)
                 # HTML(highlighted_example)
-                # HTML(highlighted_example)
                 st.markdown(highlighted_example, unsafe_allow_html=True)
+                # GLOBAL PLOT
+                feature_names = tfidf.get_feature_names_out()
+                sorted_indices = np.argsort(np.abs(coefficients))
+                sorted_feature_names = [feature_names[idx] for idx in sorted_indices]
+                sorted_coefficients = coefficients[sorted_indices]
+                top_n = 15
+                top_feature_names = sorted_feature_names[-top_n:]
+                top_coefficients = sorted_coefficients[-top_n:]
+                colors = ['royalblue' if coef < 0 else 'darkorange' for coef in top_coefficients]
 
+                # Create a horizontal bar plot using Plotly
+                fig = go.Figure(go.Bar(
+                    x=top_coefficients,
+                    y=top_feature_names,
+                    orientation='h',
+                    marker=dict(color=colors)
+                ))
+
+                # Customize layout
+                fig.update_layout(
+                    title='Global Explanation: Coefficient Magnitudes (SVM)',
+                    # xaxis_title='Coefficient Magnitude',
+                    # yaxis_title='Word',
+                    xaxis=dict(
+                        title='Coefficient Magnitude',
+                        titlefont=dict(color='black'),  # Set x-axis title font color
+                        tickfont=dict(color='black')  # Set x-axis tick labels color
+                    ),
+                    yaxis=dict(
+                        title='Word',
+                        titlefont=dict(color='black'),  # Set y-axis title font color
+                        tickfont=dict(color='black'),  # Set y-axis tick labels color
+                        autorange="reversed"
+                    ),
+                    plot_bgcolor='rgba(255, 255, 255, 1)',
+                    paper_bgcolor='rgba(255, 255, 255, 1)',
+                    titlefont=dict(color='black'),
+                    hovermode='closest',
+                    title_x=0.25,
+                )
+                st.plotly_chart(fig)
 
         st.subheader("LIME Explainer", divider='grey')
         with st.spinner("Loading...", ):
