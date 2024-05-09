@@ -504,54 +504,54 @@ if (file_csv):
             st.plotly_chart(fig)
 
             # KNN
-            def mean_distance_to_neighbors(X, neighbors_indices):
-                distances = []
-                for feature_idx in range(X.shape[1]):
-                    feature_distances = []
-                    for i in range(len(X)):
-                        neighbor_distances = [np.linalg.norm(X[i, feature_idx] - X[n, feature_idx]) for n in neighbors_indices[i]]
-                        mean_distance = np.mean(neighbor_distances)
-                        feature_distances.append(mean_distance)
-                    distances.append(np.mean(feature_distances))
-                return distances
-            neighbors_indices = load_knn.kneighbors(x_train, return_distance=False)
-            mean_distances = mean_distance_to_neighbors(x_train, neighbors_indices)
-            data = list(zip(feature_names, mean_distances))
-            data.sort(key=lambda x: x[1], reverse=True)
-            sorted_feature_names = [x[0] for x in data]
-            sorted_mean_distances = [x[1] for x in data]
-            # Create a bar trace
-            trace = go.Bar(
-                x=sorted_mean_distances,
-                y=sorted_feature_names,
-                orientation='h',
-                marker=dict(color='#2ecc71'),  # Use hex code for emerald-like color
-                hoverinfo='x+y',  # Display both x (mean distance) and y (feature name) in hover info
-            )
-            # Create layout
-            layout = go.Layout(
-                title='KNN Global Explanation: Mean Distance to Neighbors for Each Feature',
-                titlefont=dict(color='black'),
-                xaxis=dict(
-                    title='Mean Distance',
-                    titlefont=dict(color='black'),  # Set x-axis title font color
-                    tickfont=dict(color='black')  # Set x-axis tick labels color
-                ),
-                yaxis=dict(
-                    title='Feature Name',
-                    titlefont=dict(color='black'),  # Set y-axis title font color
-                    tickfont=dict(color='black'),  # Set y-axis tick labels color
-                    autorange="reversed"
-                ),
-                hovermode='closest',
-                plot_bgcolor='rgba(255, 255, 255, 1)',
-                paper_bgcolor='rgba(255, 255, 255, 1)',
-                title_x=0.15,
-            )
-            # Create figure
-            fig = go.Figure(data=[trace], layout=layout)
-            # Show plot
-            st.plotly_chart(fig)
+            # def mean_distance_to_neighbors(X, neighbors_indices):
+            #     distances = []
+            #     for feature_idx in range(X.shape[1]):
+            #         feature_distances = []
+            #         for i in range(len(X)):
+            #             neighbor_distances = [np.linalg.norm(X[i, feature_idx] - X[n, feature_idx]) for n in neighbors_indices[i]]
+            #             mean_distance = np.mean(neighbor_distances)
+            #             feature_distances.append(mean_distance)
+            #         distances.append(np.mean(feature_distances))
+            #     return distances
+            # neighbors_indices = load_knn.kneighbors(x_train, return_distance=False)
+            # mean_distances = mean_distance_to_neighbors(x_train, neighbors_indices)
+            # data = list(zip(feature_names, mean_distances))
+            # data.sort(key=lambda x: x[1], reverse=True)
+            # sorted_feature_names = [x[0] for x in data]
+            # sorted_mean_distances = [x[1] for x in data]
+            # # Create a bar trace
+            # trace = go.Bar(
+            #     x=sorted_mean_distances,
+            #     y=sorted_feature_names,
+            #     orientation='h',
+            #     marker=dict(color='#2ecc71'),  # Use hex code for emerald-like color
+            #     hoverinfo='x+y',  # Display both x (mean distance) and y (feature name) in hover info
+            # )
+            # # Create layout
+            # layout = go.Layout(
+            #     title='KNN Global Explanation: Mean Distance to Neighbors for Each Feature',
+            #     titlefont=dict(color='black'),
+            #     xaxis=dict(
+            #         title='Mean Distance',
+            #         titlefont=dict(color='black'),  # Set x-axis title font color
+            #         tickfont=dict(color='black')  # Set x-axis tick labels color
+            #     ),
+            #     yaxis=dict(
+            #         title='Feature Name',
+            #         titlefont=dict(color='black'),  # Set y-axis title font color
+            #         tickfont=dict(color='black'),  # Set y-axis tick labels color
+            #         autorange="reversed"
+            #     ),
+            #     hovermode='closest',
+            #     plot_bgcolor='rgba(255, 255, 255, 1)',
+            #     paper_bgcolor='rgba(255, 255, 255, 1)',
+            #     title_x=0.15,
+            # )
+            # # Create figure
+            # fig = go.Figure(data=[trace], layout=layout)
+            # # Show plot
+            # st.plotly_chart(fig)
 
             # SVM
             if kernel_input == "linear" :

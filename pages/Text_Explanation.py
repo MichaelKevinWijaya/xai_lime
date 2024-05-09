@@ -550,18 +550,15 @@ if (file_csv):
                 colors = ['royalblue' if coef < 0 else 'darkorange' for coef in top_coefficients]
 
                 # Create a horizontal bar plot using Plotly
-                fig = go.Figure(go.Bar(
+                trace = go.Bar(
                     x=top_coefficients,
                     y=top_feature_names,
                     orientation='h',
-                    marker=dict(color=colors)
-                ))
-
-                # Customize layout
-                fig.update_layout(
+                    marker=dict(color=colors),  # Use hex code for emerald-like color
+                )
+                layout = go.Layout(
                     title='Global Explanation: Coefficient Magnitudes (SVM)',
-                    # xaxis_title='Coefficient Magnitude',
-                    # yaxis_title='Word',
+                    titlefont=dict(color='black'),
                     xaxis=dict(
                         title='Coefficient Magnitude',
                         titlefont=dict(color='black'),  # Set x-axis title font color
@@ -575,10 +572,12 @@ if (file_csv):
                     ),
                     plot_bgcolor='rgba(255, 255, 255, 1)',
                     paper_bgcolor='rgba(255, 255, 255, 1)',
-                    titlefont=dict(color='black'),
                     hovermode='closest',
                     title_x=0.25,
                 )
+                # Create figure
+                fig = go.Figure(data=[trace], layout=layout)
+                # Show plot
                 st.plotly_chart(fig)
 
         st.subheader("LIME Explainer", divider='grey')
