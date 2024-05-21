@@ -17,6 +17,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import plot_tree
 from sklearn.metrics import accuracy_score
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
@@ -41,7 +43,7 @@ file_csv = st.file_uploader("Browse CSV file", type=["csv"], on_change=lambda: s
 # First Initialization when project run
 if 'clicked' not in st.session_state:
     st.session_state["clicked"] = {"confirmTarget": False, "initData": False, "initModel": False, "confirmDropped": False, 
-                                   "initLogregModel": False, "initKNNModel": False, "initSVMModel": False, 
+                                   "initLogregModel": False, "initKNNModel": False, "initSVMModel": False, "initTreeModel": False, 
                                    "confirmProgressInit": False,
                                    "click_generate_instance_tab0": True,
                                    "click_generate_instance_tab1": True,
@@ -170,7 +172,7 @@ if (file_csv):
                 # df.rename(columns = {'LEUCOCYTE':'LEUCO'}, inplace = True)
                 df = df.astype(float)
             if (file_name == "jogja_air_quality.csv"):
-                unique_values = df[sbTarget].unique()
+                unique_values = ['Moderate', 'Good']
                 saveSession({"unique_values": unique_values})
                 df.loc[df["Category"] == "Good", "Category"] = 0
                 df.loc[df["Category"] == "Moderate", "Category"] = 1
@@ -266,12 +268,18 @@ if (file_csv):
                 # st.caption("*or*")
                 # svm_auto_gmma = st.checkbox("Auto Select", value=True, key="svm_auto_kernel")
                 # st.caption("Automatically find the most optimal kernel for SVM model")  
-            st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initSVMModel"])
+            st.form_submit_button("Proceed", type="primary", on_click=clicked, args=["initSVMModel"])
             st.session_state["clicked"]["initSVMModel"] = True
 
+    if getSession("clicked")["initSVMModel"]:
+        st.subheader("Decision Tree Model Initialization", divider="grey")
+        with st.form(key="form_treemodel_initialization"):
+            max_depth = st.number_input('Max Depth', key="max_depth", min_value=1, max_value=10, value=3)
+            st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initTreeModel"])
+            st.session_state["clicked"]["initTreeModel"] = True
 
     # PROCESS INITIALIZATION
-    if getSession("clicked")["initSVMModel"]:
+    if getSession("clicked")["initTreeModel"]:
         with st.spinner('Initializing the Data, please wait...'):
             random_state = getSession("random_state")
             target_feature = sbTarget
@@ -293,7 +301,7 @@ if (file_csv):
             x_test = scaller.transform(x_test)
             saveSession({"x_train": x_train, "x_test": x_test, "y_train": y_train, "y_test": y_test, "scaler": scaller})
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         with col1:
             st.subheader("Logistic Regression", divider='grey')
             logreg = LogisticRegression()
@@ -420,7 +428,8 @@ if (file_csv):
                         plt.legend(loc="lower right")
                         st.pyplot(plt.gcf())
                         st.markdown("*KNN Model Initialization Complete*")
-        with col3:
+        col1, col2 = st.columns(2)
+        with col1:
             st.subheader("SVM", divider='grey')
             # svm_model = SVC()
             # param_grid = {'C': c_input, 'gamma': gamma_input, 'kernel': kernel_input}
@@ -453,6 +462,44 @@ if (file_csv):
                         plt.legend(loc="lower right")
                         st.pyplot(plt.gcf())
                         st.markdown("*SVM Model Initialization Complete*")
+        with col2:
+            class_names = getSession("unique_values")
+            max_depth = getSession("max_depth")
+            x_train_lime = pd.DataFrame(x_train, columns = x.columns)
+            feature_names = list(x_train_lime.columns)
+            st.subheader("Decision Tree", divider='grey')
+            with st.spinner("Loading...", ):
+                if (getSession("clicked")["initSVMModel"]):
+                    with st.expander("Show Decision Tree Information"):
+                        decisiontree = DecisionTreeClassifier(criterion='entropy', max_depth=max_depth)
+                        decisiontree.fit(x_train, y_train)
+                        y_pred = decisiontree.predict(x_test)
+                        tree_accuracy = accuracy_score(y_test, y_pred)
+                        st.markdown("**Score :** *{:.3f}*".format(tree_accuracy))
+                        saveSession({"decisiontree": decisiontree, "svm_score": tree_accuracy})
+                        plt.figure(figsize=(13,5))
+                        plot_tree(decisiontree, feature_names=feature_names, class_names=class_names, filled=True, rounded=True)
+                        st.pyplot()
+
+                        # AUC/ROC Curve
+                        probabilities = decisiontree.predict_proba(x_test)
+                        # fpr, tpr, _ = roc_curve(y_test, y_pred_knn)
+                        fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
+                        roc_auc = auc(fpr, tpr)
+                        # Plot ROC curve
+                        plt.figure()
+                        lw = 2
+                        plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+                        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--', label='Random Guess')
+                        plt.xlim([0.0, 1.0])
+                        plt.ylim([0.0, 1.05])
+                        plt.xlabel('False Positive Rate')
+                        plt.ylabel('True Positive Rate')
+                        plt.title('Receiver Operating Characteristic (ROC) Curve')
+                        plt.legend(loc="lower right")
+                        st.pyplot(plt.gcf())
+                        st.markdown("*Decision Tree Model Initialization Complete*")
+
         st.session_state["clicked"]["model_visual"] = True
 
     if st.session_state.get("clicked", {}).get("model_visual", True):
@@ -465,17 +512,18 @@ if (file_csv):
             # LOGREG
             coefficients = logreg_model.coef_.ravel()
             feature_names = list(x.columns)
-            coefficient_magnitudes = abs(coefficients)
-            sorted_data = pd.DataFrame({'feature': feature_names, 'magnitude': coefficient_magnitudes})
-            sorted_data = sorted_data.sort_values(by='magnitude', ascending=False)
+            sorted_indices = np.argsort(np.abs(coefficients))[::-1] # Reverse order for descending sort
+            sorted_coefficients = coefficients[sorted_indices]
+            sorted_feature_names = [feature_names[i] for i in sorted_indices]
+            sorted_data = pd.DataFrame({'feature': sorted_feature_names, 'coefficient': sorted_coefficients})
+            colors = ['royalblue' if coef < 0 else 'darkorange' for coef in sorted_coefficients]
 
             # Create the horizontal bar plot using plotly
             trace = go.Bar(
-                x=sorted_data['magnitude'],
+                x=sorted_data['coefficient'],
                 y=sorted_data['feature'],
                 orientation='h',
-                marker=dict(color='#2ecc71'),  # Use emerald-like color
-                hoverinfo='x+y'  # Display both values on hover
+                marker=dict(color=colors),  # Use emerald-like color
             )
 
             # Customize layout
@@ -503,78 +551,24 @@ if (file_csv):
             # Display the plot in Streamlit
             st.plotly_chart(fig)
 
-            # KNN
-            # def mean_distance_to_neighbors(X, neighbors_indices):
-            #     distances = []
-            #     for feature_idx in range(X.shape[1]):
-            #         feature_distances = []
-            #         for i in range(len(X)):
-            #             neighbor_distances = [np.linalg.norm(X[i, feature_idx] - X[n, feature_idx]) for n in neighbors_indices[i]]
-            #             mean_distance = np.mean(neighbor_distances)
-            #             feature_distances.append(mean_distance)
-            #         distances.append(np.mean(feature_distances))
-            #     return distances
-            # neighbors_indices = load_knn.kneighbors(x_train, return_distance=False)
-            # mean_distances = mean_distance_to_neighbors(x_train, neighbors_indices)
-            # data = list(zip(feature_names, mean_distances))
-            # data.sort(key=lambda x: x[1], reverse=True)
-            # sorted_feature_names = [x[0] for x in data]
-            # sorted_mean_distances = [x[1] for x in data]
-            # # Create a bar trace
-            # trace = go.Bar(
-            #     x=sorted_mean_distances,
-            #     y=sorted_feature_names,
-            #     orientation='h',
-            #     marker=dict(color='#2ecc71'),  # Use hex code for emerald-like color
-            #     hoverinfo='x+y',  # Display both x (mean distance) and y (feature name) in hover info
-            # )
-            # # Create layout
-            # layout = go.Layout(
-            #     title='KNN Global Explanation: Mean Distance to Neighbors for Each Feature',
-            #     titlefont=dict(color='black'),
-            #     xaxis=dict(
-            #         title='Mean Distance',
-            #         titlefont=dict(color='black'),  # Set x-axis title font color
-            #         tickfont=dict(color='black')  # Set x-axis tick labels color
-            #     ),
-            #     yaxis=dict(
-            #         title='Feature Name',
-            #         titlefont=dict(color='black'),  # Set y-axis title font color
-            #         tickfont=dict(color='black'),  # Set y-axis tick labels color
-            #         autorange="reversed"
-            #     ),
-            #     hovermode='closest',
-            #     plot_bgcolor='rgba(255, 255, 255, 1)',
-            #     paper_bgcolor='rgba(255, 255, 255, 1)',
-            #     title_x=0.15,
-            # )
-            # # Create figure
-            # fig = go.Figure(data=[trace], layout=layout)
-            # # Show plot
-            # st.plotly_chart(fig)
-
             # SVM
             if kernel_input == "linear" :
                 coefficients = svm_model.coef_.ravel()
+                # coefficients = -coefficients
                 feature_names = list(x.columns)
-                coefficient_magnitudes = abs(coefficients)
-                sorted_data = pd.DataFrame({'feature': feature_names, 'magnitude': coefficient_magnitudes})
-                sorted_data = sorted_data.sort_values(by='magnitude', ascending=False)
+                sorted_indices = np.argsort(np.abs(coefficients))[::-1] # Reverse order for descending sort
+                sorted_coefficients = coefficients[sorted_indices]
+                sorted_feature_names = [feature_names[i] for i in sorted_indices]
+                sorted_data = pd.DataFrame({'feature': sorted_feature_names, 'coefficient': sorted_coefficients})
+                colors = ['royalblue' if coef < 0 else 'darkorange' for coef in sorted_coefficients]
 
                 trace = go.Bar(
-                    x=sorted_data['magnitude'],
+                    x=sorted_data['coefficient'],
                     y=sorted_data['feature'],
                     orientation='h',
-                    marker=dict(color='#2ecc71'),  # Use emerald-like color
+                    marker=dict(color=colors),
                     hoverinfo='x+y'  # Display both values on hover
                 )
-
-                fig = go.Figure(go.Bar(
-                    x=sorted_data['magnitude'],
-                    y=sorted_data['feature'],
-                    orientation='h',
-                    marker=dict(color='#2ecc71'),  # Use emerald-like color
-                ))
 
                 # Customize layout
                 layout = go.Layout(
@@ -610,7 +604,7 @@ if (file_csv):
                 lime_instance = st.number_input('Instance to be explained', key="lime_target", min_value=0, max_value=max_idx-1, step=1)
             with col2:
                 max_idx = df.shape[1] - len(sbDropped)
-                column_num = st.number_input('Number of columns to be displayed', key="max_columns", min_value=1, value=max_idx-1, max_value=max_idx-1, step=1)
+                column_num = st.number_input('Number of columns to be displayed', key="max_columns", min_value=1, value=max_idx-1, step=1)
             st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initLIME"])
         st.session_state["lime_instance"] = lime_instance
         st.session_state["column_num"] = column_num
@@ -626,6 +620,7 @@ if (file_csv):
         knn_model = getSession("knn_model")
         logreg_model = getSession("logreg_model")
         svm_model = getSession("svm_model")
+        decisiontree = getSession("decisiontree")
         lime_instance = getSession("lime_instance")
         column_num = getSession("column_num")
         kernel_input = getSession("kernel_input")
@@ -691,3 +686,14 @@ if (file_csv):
             st.markdown("#### SVM Model", unsafe_allow_html=True)
             st.markdown(f'<iframe src="data:text/html;base64,{base64.b64encode(open(temp_file_path.name, "rb").read()).decode()}" height="340" width="1000"></iframe>', unsafe_allow_html=True)
 
+            # LIME for Decision Tree =================================================================
+            exp = explainer.explain_instance(data_row=x_test_lime.iloc[lime_instance], 
+                                             predict_fn=decisiontree.predict_proba, 
+                                             num_features=column_num)
+            html_explanation = exp.as_html()
+            temp_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
+            temp_file_path.write(html_explanation.encode())
+            temp_file_path.close()
+            # Display the HTML explanation using an iframe
+            st.markdown("#### Decision Tree Model", unsafe_allow_html=True)
+            st.markdown(f'<iframe src="data:text/html;base64,{base64.b64encode(open(temp_file_path.name, "rb").read()).decode()}" height="340" width="1000"></iframe>', unsafe_allow_html=True)

@@ -495,8 +495,8 @@ if (file_csv):
                 sorted_feature_names = [feature_names[idx] for idx in sorted_indices]
                 sorted_coefficients = coefficients[sorted_indices]
                 top_n = 15
-                top_feature_names = sorted_feature_names[-top_n:]
-                top_coefficients = sorted_coefficients[-top_n:]
+                top_feature_names = sorted_feature_names[-top_n:][::-1]
+                top_coefficients = sorted_coefficients[-top_n:][::-1]
                 colors = ['royalblue' if coef < 0 else 'darkorange' for coef in top_coefficients]
 
                 trace = go.Bar(
@@ -543,8 +543,8 @@ if (file_csv):
                 sorted_feature_names = [feature_names[idx] for idx in sorted_indices]
                 sorted_coefficients = coefficients[sorted_indices]
                 top_n = 15
-                top_feature_names = sorted_feature_names[-top_n:]
-                top_coefficients = sorted_coefficients[-top_n:]
+                top_feature_names = sorted_feature_names[-top_n:][::-1]
+                top_coefficients = sorted_coefficients[-top_n:][::-1]
                 colors = ['royalblue' if coef < 0 else 'darkorange' for coef in top_coefficients]
 
                 # Create a horizontal bar plot using Plotly
