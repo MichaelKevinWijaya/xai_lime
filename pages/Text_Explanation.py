@@ -190,19 +190,17 @@ if (file_csv):
             st.subheader("Negative Word Cloud")
             negative_text = df[df['sentiment'] == "negative"]['text']
             negative_text_combined = ' '.join(negative_text)
-            # if st.session_state.get("neg_word_cloud", None) is None:
-            #     st.session_state["neg_word_cloud"] = create_word_cloud(negative_text_combined)
-            # st.pyplot(st.session_state["neg_word_cloud"])  # Display cached negative word cloud
-            st.pyplot(create_word_cloud(negative_text_combined))
+            if st.session_state.get("neg_word_cloud", None) is None:
+                st.session_state["neg_word_cloud"] = create_word_cloud(negative_text_combined)
+            st.pyplot(st.session_state["neg_word_cloud"])  # Display cached negative word cloud
         with col2:
             # Positive Word Cloud (using cached create_word_cloud)
             st.subheader("Positive Word Cloud")
             positive_text = df[df['sentiment'] == "positive"]['text']
             positive_text_combined = ' '.join(positive_text)
-            # if st.session_state.get("pos_word_cloud", None) is None:
-            #     st.session_state["pos_word_cloud"] = create_word_cloud(positive_text_combined)
-            # st.pyplot(st.session_state["pos_word_cloud"])  # Display cached positive word cloud
-            st.pyplot(create_word_cloud(positive_text_combined))
+            if st.session_state.get("pos_word_cloud", None) is None:
+                st.session_state["pos_word_cloud"] = create_word_cloud(positive_text_combined)
+            st.pyplot(st.session_state["pos_word_cloud"])  # Display cached positive word cloud
     
     st.subheader("Data Initialization", divider="grey")
     with st.form(key="form_data_initialization"):
