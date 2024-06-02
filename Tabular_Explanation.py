@@ -56,9 +56,13 @@ def readData(file_csv):
     return pd.read_csv(file_csv)
 
 def clicked(button):
+    print("================================================")
+    print(st.session_state["clicked"])
     if (button == "initModel"):
         saveSession({"confirmProgressInit": True})
     st.session_state.clicked[button] = True
+    print("+++++++++++++++++++++++++++++++++++++++++++++")
+    print(st.session_state["clicked"])
 
 
 def getKNN_k(x_train, y_train, x_test, y_test, x_columns, min_iter=2, max_iter=40):
@@ -82,24 +86,6 @@ if (file_csv):
     file_name = file_csv.name
     st.session_state["file_csv"] = file_csv
     st.session_state["uploaded_file_name"] = file_name
-    # if (file_name == "data_commuter.csv"):
-    #     df.loc[df["Kepuasan Hidup"] == "Sangat Tidak Puas", "Kepuasan Hidup"] = 0
-    #     df.loc[df["Kepuasan Hidup"] == "Biasa", "Kepuasan Hidup"] = 1
-    #     df.loc[df["Kepuasan Hidup"] == "Sangat Puas", "Kepuasan Hidup"] = 2
-    #     df = df.astype(float)
-    # if (file_name == "patient_treatment.csv"):
-    #     df.loc[df["SOURCE"] == "out", "SOURCE"] = 0
-    #     df.loc[df["SOURCE"] == "in", "SOURCE"] = 1
-    #     df.loc[df["SEX"] == "M", "SEX"] = 0
-    #     df.loc[df["SEX"] == "F", "SEX"] = 1
-    #     df = df.astype(float)
-    # if (file_name == "jogja_air_quality.csv"):
-    #     df.loc[df["Category"] == "Good", "Category"] = 0
-    #     df.loc[df["Category"] == "Moderate", "Category"] = 1
-    #     indexAge = df[(df['Category'] == 'Unhealthy')].index
-    #     df.drop(indexAge, inplace=True)
-    #     dummy = df['Critical Component'].str.get_dummies(sep=',').add_prefix('CC_')
-    #     df = pd.concat([df.drop(columns=['Critical Component']), dummy], axis=1)
     st.session_state["df"] = df
     st.session_state["uploaded_file"] = file_csv.name
     
@@ -200,7 +186,6 @@ if (file_csv):
 
     # LOGISTIC MODEL INITIALIZATION
     if getSession("clicked")["initData"]:
-        # st.write(getSession("random_state"))
         st.subheader("Logistic Regression Model Initialization", divider="grey")
         with st.form(key="form_logregmodel_initialization"):
             st.write("#### Feature Visualization")
@@ -211,11 +196,10 @@ if (file_csv):
                 st.caption(":red[**WARNING!**] *Pick 2 features to be visualized!*")
             sbLogregVisualized_idx = [dataColumns.index(value) for value in sbLogregVisualized]
             st.form_submit_button("Proceed", type="primary", on_click=clicked, args=["initLogregModel"])
-            st.session_state["clicked"]["initLogregModel"] = True
+            # st.session_state["clicked"]["initLogregModel"] = True
 
     # KNN MODEL INITIALIZATION
     if getSession("clicked")["initLogregModel"] and len(sbLogregVisualized) == 2:
-        # st.write(getSession("random_state"))
         st.subheader("KNN Model Initialization", divider="grey")
         with st.form(key="form_knnmodel_initialization"):
             col1, col2 = st.columns(2)
@@ -237,11 +221,10 @@ if (file_csv):
                         ":red[**WARNING!**] *Pick 2 features to be visualized!*")
                 sbKNNVisualized_idx = [columnOptions.index(value) for value in sbKNNVisualized]
             st.form_submit_button("Proceed", type="primary", on_click=clicked, args=["initKNNModel"])
-            st.session_state["clicked"]["initKNNModel"] = True
+            # st.session_state["clicked"]["initKNNModel"] = True
 
     # SVM MODEL INITIALIZATION
     if getSession("clicked")["initKNNModel"] and len(sbKNNVisualized) == 2:
-        # st.write(getSession("random_state"))
         st.subheader("SVM Model Initialization", divider="grey")
         with st.form(key="form_svmmodel_initialization"):
             col1, col2, col3 = st.columns(3)
@@ -269,14 +252,14 @@ if (file_csv):
                 # svm_auto_gmma = st.checkbox("Auto Select", value=True, key="svm_auto_kernel")
                 # st.caption("Automatically find the most optimal kernel for SVM model")  
             st.form_submit_button("Proceed", type="primary", on_click=clicked, args=["initSVMModel"])
-            st.session_state["clicked"]["initSVMModel"] = True
+            # st.session_state["clicked"]["initSVMModel"] = True
 
     if getSession("clicked")["initSVMModel"]:
         st.subheader("Decision Tree Model Initialization", divider="grey")
         with st.form(key="form_treemodel_initialization"):
             max_depth = st.number_input('Max Depth', key="max_depth", min_value=1, max_value=10, value=3)
             st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initTreeModel"])
-            st.session_state["clicked"]["initTreeModel"] = True
+            # st.session_state["clicked"]["initTreeModel"] = True
 
     # PROCESS INITIALIZATION
     if getSession("clicked")["initTreeModel"]:
@@ -608,7 +591,7 @@ if (file_csv):
             st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initLIME"])
         st.session_state["lime_instance"] = lime_instance
         st.session_state["column_num"] = column_num
-        st.session_state["clicked"]["initLIME"] = True
+        # st.session_state["clicked"]["initLIME"] = True
 
 
     if (getSession("clicked")["initLIME"]):

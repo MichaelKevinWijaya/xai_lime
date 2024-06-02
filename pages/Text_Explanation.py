@@ -114,6 +114,19 @@ def calculate_error_rates_and_plot(_train_x_vector, train_y, _test_x_vector, tes
     return fig, k_neighbor
 
 @st.cache_data
+def fit_model(_train_x_vector, _train_y, model_type, k=5, c=1.0, gamma=1, kernel="linear"):
+    if model_type == "Logistic Regression":
+        model = LogisticRegression()
+    elif model_type == "KNN":
+        model = KNeighborsClassifier(n_neighbors=k, weights="distance")
+    elif model_type == "SVM":
+        model = SVC(C=c, gamma=gamma, kernel=kernel, probability=True)
+    model.fit(train_x_vector, train_y)
+    accuracy_score = model.score(test_x_vector, test_y)
+    return accuracy_score, model
+
+
+@st.cache_data
 def plot_roc_curve(test_y, _test_x_vector, _model):
     """
     Plots the ROC curve for a given model and data.
@@ -270,8 +283,9 @@ if (file_csv):
             with st.spinner("Loading...", ):
                 with st.expander("Show Logistic Regression Information"):
                     logreg_model = LogisticRegression()
-                    logreg_model.fit(train_x_vector,train_y)
-                    logreg_accuracy = logreg_model.score(test_x_vector, test_y)
+                    # logreg_model.fit(train_x_vector,train_y)
+                    # logreg_accuracy = logreg_model.score(test_x_vector, test_y)
+                    logreg_accuracy, logreg_model= fit_model(train_x_vector, train_y, "Logistic Regression")
                     st.markdown("**Score :** *{:.3f}*".format(logreg_accuracy))
                     # AUC/ROC
                     plot_roc_curve(test_y, test_x_vector, logreg_model)
@@ -284,15 +298,17 @@ if (file_csv):
                     if (knn_auto_k):
                         fig, k_auto_neighbor = calculate_error_rates_and_plot(train_x_vector, train_y, test_x_vector, test_y)
                         knn_model = KNeighborsClassifier(n_neighbors=k_auto_neighbor, weights="distance")
-                        knn_model.fit(train_x_vector, train_y)
-                        knn_accuracy = knn_model.score(test_x_vector, test_y)
+                        # knn_model.fit(train_x_vector, train_y)
+                        # knn_accuracy = knn_model.score(test_x_vector, test_y)
+                        knn_accuracy, knn_model = fit_model(train_x_vector, train_y, "KNN", k=k_auto_neighbor)
                         st.markdown("**Score :** *{:.3f}*".format(knn_accuracy))
                         st.markdown("**Best K :** *{}*".format(k_auto_neighbor))
                         st.pyplot(fig)
                     else:
                         knn_model = KNeighborsClassifier(n_neighbors=k_input, weights="distance")
-                        knn_model.fit(train_x_vector, train_y)
-                        knn_accuracy = knn_model.score(test_x_vector, test_y)
+                        # knn_model.fit(train_x_vector, train_y)
+                        # knn_accuracy = knn_model.score(test_x_vector, test_y)
+                        knn_accuracy, knn_model = fit_model(train_x_vector, train_y, "KNN", k=k_input)
                         st.markdown("**Score :** *{:.3f}*".format(knn_accuracy))
                         st.markdown("K Neighbors : {}".format(k_input))
                     # AUC/ROC
@@ -304,8 +320,9 @@ if (file_csv):
             with st.spinner("Loading...", ):
                 with st.expander("Show SVM Information"):
                     svm_model = SVC(C=c_input, gamma=gamma_input, kernel=kernel_input, probability=True)
-                    svm_model.fit(train_x_vector, train_y)
-                    svm_accuracy = svm_model.score(test_x_vector, test_y)
+                    # svm_model.fit(train_x_vector, train_y)
+                    # svm_accuracy = svm_model.score(test_x_vector, test_y)
+                    svm_accuracy, svm_model = fit_model(train_x_vector, train_y, "SVM", c=c_input, gamma=gamma_input, kernel=kernel_input)
                     st.markdown("**Score :** *{:.3f}*".format(svm_accuracy))
                     # AUC/ROC
                     plot_roc_curve(test_y, test_x_vector, svm_model)
