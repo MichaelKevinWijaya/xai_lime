@@ -10,7 +10,3 @@ wordcloud
 scikit-learn
 textblob
 statsmodels
-
-if st.session_state.get("neg_word_cloud", None) is None:
-    st.session_state["neg_word_cloud"] = create_word_cloud(negative_text_combined)
-st.pyplot(st.session_state["neg_word_cloud"])  # Display cached negative word cloud
