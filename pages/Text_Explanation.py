@@ -106,24 +106,12 @@ def calculate_error_rates_and_plot(_train_x_vector, train_y, _test_x_vector, tes
     k_neighbor = min_index + 1
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(range(1, 40), error_rate, color='blue', linestyle='dashed', marker='o', markerfacecolor='red', markersize=10)
+    ax.plot(range(1, 40), error_rate, color='blue', linestyle='dashed', marker='o',
+            markerfacecolor='red', markersize=10)
     ax.set_title('Error Rate vs. K Value')
     ax.set_xlabel('K')
     ax.set_ylabel('Error Rate')
     return fig, k_neighbor
-
-@st.cache_data
-def fit_model(_train_x_vector, _train_y, model_type, k=5, c=1.0, gamma=1, kernel="linear"):
-    if model_type == "Logistic Regression":
-        model = LogisticRegression()
-    elif model_type == "KNN":
-        model = KNeighborsClassifier(n_neighbors=k, weights="distance")
-    elif model_type == "SVM":
-        model = SVC(C=c, gamma=gamma, kernel=kernel, probability=True)
-    model.fit(train_x_vector, train_y)
-    accuracy_score = model.score(test_x_vector, test_y)
-    return accuracy_score, model
-
 
 @st.cache_data
 def plot_roc_curve(test_y, _test_x_vector, _model):
@@ -284,7 +272,6 @@ if (file_csv):
                     logreg_model = LogisticRegression()
                     logreg_model.fit(train_x_vector,train_y)
                     logreg_accuracy = logreg_model.score(test_x_vector, test_y)
-                    # logreg_accuracy, logreg_model= fit_model(train_x_vector, train_y, "Logistic Regression")
                     st.markdown("**Score :** *{:.3f}*".format(logreg_accuracy))
                     # AUC/ROC
                     plot_roc_curve(test_y, test_x_vector, logreg_model)
@@ -299,7 +286,6 @@ if (file_csv):
                         knn_model = KNeighborsClassifier(n_neighbors=k_auto_neighbor, weights="distance")
                         knn_model.fit(train_x_vector, train_y)
                         knn_accuracy = knn_model.score(test_x_vector, test_y)
-                        # knn_accuracy, knn_model = fit_model(train_x_vector, train_y, "KNN", k=k_auto_neighbor)
                         st.markdown("**Score :** *{:.3f}*".format(knn_accuracy))
                         st.markdown("**Best K :** *{}*".format(k_auto_neighbor))
                         st.pyplot(fig)
@@ -307,7 +293,6 @@ if (file_csv):
                         knn_model = KNeighborsClassifier(n_neighbors=k_input, weights="distance")
                         knn_model.fit(train_x_vector, train_y)
                         knn_accuracy = knn_model.score(test_x_vector, test_y)
-                        # knn_accuracy, knn_model = fit_model(train_x_vector, train_y, "KNN", k=k_input)
                         st.markdown("**Score :** *{:.3f}*".format(knn_accuracy))
                         st.markdown("K Neighbors : {}".format(k_input))
                     # AUC/ROC
@@ -321,7 +306,6 @@ if (file_csv):
                     svm_model = SVC(C=c_input, gamma=gamma_input, kernel=kernel_input, probability=True)
                     svm_model.fit(train_x_vector, train_y)
                     svm_accuracy = svm_model.score(test_x_vector, test_y)
-                    # svm_accuracy, svm_model = fit_model(train_x_vector, train_y, "SVM", c=c_input, gamma=gamma_input, kernel=kernel_input)
                     st.markdown("**Score :** *{:.3f}*".format(svm_accuracy))
                     # AUC/ROC
                     plot_roc_curve(test_y, test_x_vector, svm_model)
@@ -341,7 +325,7 @@ if (file_csv):
             st.form_submit_button("Begin Initialization", type="primary", on_click=clicked, args=["initLIME"])
         st.session_state["lime_instance"] = lime_instance
         st.session_state["column_num"] = column_num
-        # st.session_state["clicked"]["initLIME"] = True
+        st.session_state["clicked"]["initLIME"] = True
 
     if (getSession("clicked")["initLIME"]):
         class_names = ["negative", "positive"]
@@ -353,7 +337,132 @@ if (file_csv):
         column_num = getSession("column_num")
         explainer = LimeTextExplainer(class_names=class_names)
         st.subheader("Global Explainer", divider='grey')
+        # with st.spinner("Loading...", ):
+        #     # LOGREG
+        #     feature_names = tfidf.get_feature_names_out()
+        #     feature_importances = logreg_model.coef_[0]
+        #     sorted_indices = feature_importances.argsort()
+        #     sorted_feature_names = [feature_names[idx] for idx in sorted_indices]
+        #     sorted_feature_importances = feature_importances[sorted_indices]
+        #     top_n = 15  # Number of top features to visualize
+        #     top_feature_names = sorted_feature_names[-top_n:]
+        #     top_feature_importances = sorted_feature_importances[-top_n:]
 
+            # trace = go.Bar(
+            #     x=top_feature_importances,
+            #     y=top_feature_names,
+            #     orientation='h',
+            #     marker=dict(color='#2ecc71'),  # Use emerald-like color
+            #     hoverinfo='x+y'  # Display both values on hover
+            # )
+            # layout = go.Layout(
+            #     title='Logistic Regression Global Explanation: Coefficient Magnitudes',
+            #     titlefont=dict(color='black'),
+            #     xaxis=dict(
+            #         title='Coefficient Magnitude',
+            #         titlefont=dict(color='black'),  # Set x-axis title font color
+            #         tickfont=dict(color='black')  # Set x-axis tick labels color
+            #     ),
+            #     yaxis=dict(
+            #         title='Word',
+            #         titlefont=dict(color='black'),  # Set y-axis title font color
+            #         tickfont=dict(color='black'),  # Set y-axis tick labels color
+            #         # autorange="reversed"
+            #     ),
+            #     hovermode='closest',
+            #     plot_bgcolor='rgba(255, 255, 255, 1)',
+            #     paper_bgcolor='rgba(255, 255, 255, 1)',
+            #     title_x=0.15,  # Invert y-axis for top-down display
+            # )
+            # fig = go.Figure(data=[trace], layout=layout)
+            # # Display the plot in Streamlit
+            # st.plotly_chart(fig)
+
+            # # KNN
+            # feature_names = tfidf.get_feature_names_out()
+            # neighbors = knn_model.kneighbors(train_x_vector, return_distance=False)
+            # feature_occurrences = np.zeros(train_x_vector.shape[1])  # Initialize an array to store feature occurrences
+            # for i, neighbor_indices in enumerate(neighbors):
+            #     labels = train_y.values[neighbor_indices]
+            #     for label in labels:
+            #         feature_occurrences[train_x_vector[i].indices] += 1
+            # sorted_indices = np.argsort(feature_occurrences)
+            # sorted_feature_names = [feature_names[idx] for idx in sorted_indices]
+            # sorted_feature_occurrences = feature_occurrences[sorted_indices]
+            # top_n = 15  # Number of top features to visualize
+            # top_feature_names = sorted_feature_names[-top_n:]
+            # top_feature_occurrences = sorted_feature_occurrences[-top_n:]
+
+            # trace = go.Bar(
+            #     x=top_feature_occurrences,
+            #     y=top_feature_names,
+            #     orientation='h',
+            #     marker=dict(color='#2ecc71'),  # Use hex code for emerald-like color
+            #     hoverinfo='x+y',  # Display both x (mean distance) and y (feature name) in hover info
+            # )
+            # layout = go.Layout(
+            #     title='KNN Global Explanation: Feature Occurrences',
+            #     titlefont=dict(color='black'),
+            #     xaxis=dict(
+            #         title='Feature Occurrences',
+            #         titlefont=dict(color='black'),  # Set x-axis title font color
+            #         tickfont=dict(color='black')  # Set x-axis tick labels color
+            #     ),
+            #     yaxis=dict(
+            #         title='Word',
+            #         titlefont=dict(color='black'),  # Set y-axis title font color
+            #         tickfont=dict(color='black'),  # Set y-axis tick labels color
+            #         # autorange="reversed"
+            #     ),
+            #     hovermode='closest',
+            #     plot_bgcolor='rgba(255, 255, 255, 1)',
+            #     paper_bgcolor='rgba(255, 255, 255, 1)',
+            #     title_x=0.27,
+            # )
+            # fig = go.Figure(data=[trace], layout=layout)
+            # # Show plot
+            # st.plotly_chart(fig)
+
+            # # SVM
+            # if kernel_input == "linear" :
+            #     feature_names = tfidf.get_feature_names_out()
+            #     coefficients = svm_model.coef_.toarray()[0]  # Convert the coefficients to a dense array
+            #     sorted_indices = np.argsort(coefficients)
+            #     sorted_feature_names = [feature_names[idx] for idx in sorted_indices]
+            #     sorted_coefficients = coefficients[sorted_indices]
+            #     top_n = 15  # Number of top features to visualize
+            #     top_feature_names = sorted_feature_names[-top_n:]
+            #     top_coefficients = sorted_coefficients[-top_n:]
+
+            #     trace = go.Bar(
+            #         x=top_coefficients,
+            #         y=top_feature_names,
+            #         orientation='h',
+            #         marker=dict(color='#2ecc71'),  # Use hex code for emerald-like color
+            #         hoverinfo='x+y',  # Display both x (mean distance) and y (feature name) in hover info
+            #     )
+            #     layout = go.Layout(
+            #         title='SVM Global Explanation: Coefficient Magnitudes',
+            #         titlefont=dict(color='black'),
+            #         xaxis=dict(
+            #             title='Coefficient Magnitudes',
+            #             titlefont=dict(color='black'),  # Set x-axis title font color
+            #             tickfont=dict(color='black')  # Set x-axis tick labels color
+            #         ),
+            #         yaxis=dict(
+            #             title='Word',
+            #             titlefont=dict(color='black'),  # Set y-axis title font color
+            #             tickfont=dict(color='black'),  # Set y-axis tick labels color
+            #             # autorange="reversed"
+            #         ),
+            #         hovermode='closest',
+            #         plot_bgcolor='rgba(255, 255, 255, 1)',
+            #         paper_bgcolor='rgba(255, 255, 255, 1)',
+            #         title_x=0.25,
+            #     )
+            #     fig = go.Figure(data=[trace], layout=layout)
+            #     # Show plot
+            #     st.plotly_chart(fig)
         with st.spinner("Loading...", ):
             with st.expander("Show Global Explanation"):
                 # Function to highlight words based on their contribution to sentiment
