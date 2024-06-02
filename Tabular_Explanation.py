@@ -81,6 +81,36 @@ def getKNN_k(x_train, y_train, x_test, y_test, x_columns, min_iter=2, max_iter=4
     k_neighbor = list(max_dict.keys())[0]
     return k_neighbor, k_neighbor_score
 
+@st.cache_data(show_spinner=False)
+def calculate_error_rates_and_plot():
+    error_rate = []
+    list_score = []
+    for i in range(1,40):
+        knn = KNeighborsClassifier(n_neighbors=i, weights="distance")
+        knn.fit(x_train,y_train)
+        pred_i = knn.predict(x_test)
+        error_rate.append(np.mean(pred_i != y_test))
+        list_score.append(knn.score(x_test, y_test))
+        knn_score = knn.score(x_test, y_test)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(range(1, 40), error_rate, color='blue', linestyle='dashed', marker='o', markerfacecolor='red', markersize=10)
+    ax.set_title('Error Rate vs. K Value')
+    ax.set_xlabel('K')
+    ax.set_ylabel('Error Rate')
+    return fig
+
+@st.cache_data
+def fit_model(_train_x_vector, _train_y, model_type, k=5, c=1.0, gamma=1, kernel="linear"):
+    if model_type == "Logistic Regression":
+        model = LogisticRegression()
+    elif model_type == "KNN":
+        model = KNeighborsClassifier(n_neighbors=k, weights="distance")
+    elif model_type == "SVM":
+        model = SVC(C=c, gamma=gamma, kernel=kernel, probability=True)
+    model.fit(_train_x_vector, _train_y)
+    accuracy_score = model.score(_train_x_vector, _train_y)
+    return accuracy_score, model
+
 if (file_csv):
     df = readData(file_csv)
     file_name = file_csv.name
@@ -290,6 +320,7 @@ if (file_csv):
             logreg = LogisticRegression()
             logreg.fit(x_train, y_train)
             logreg_score = logreg.score(x_test, y_test)
+            # logreg_score, logreg = fit_model(x_train, y_train, "Logistic Regression")
             y_pred_logreg=logreg.predict(x_test)
             saveSession({"logreg_model": logreg, "logreg_score": logreg_score})
 
@@ -341,21 +372,14 @@ if (file_csv):
                 # ==================
                 # Plot error rate  
                 # ==================
-                error_rate = []
-                list_score = []
-                for i in range(1,40):
-                    knn = KNeighborsClassifier(n_neighbors=i, weights="distance")
-                    knn.fit(x_train,y_train)
-                    pred_i = knn.predict(x_test)
-                    error_rate.append(np.mean(pred_i != y_test))
-                    list_score.append(knn.score(x_test, y_test))
-                    knn_score = knn.score(x_test, y_test)
+                fig = calculate_error_rates_and_plot()
+                # st.pyplot(fig)
                 
-                plt.figure(figsize=(10,6))
-                plt.plot(range(1,40),error_rate,color='blue', linestyle='dashed', marker='o', markerfacecolor='red', markersize=10)
-                plt.title('Error Rate vs. K Value')
-                plt.xlabel('K')
-                plt.ylabel('Error Rate')
+                # plt.figure(figsize=(10,6))
+                # plt.title('Error Rate vs. K Value')
+                # plt.xlabel('K')
+                # plt.ylabel('Error Rate')
+                # plt.plot(range(1,40),error_rate,color='blue', linestyle='dashed', marker='o', markerfacecolor='red', markersize=10)
                 
                 # Get the best K
                 k_auto_neighbor, k_neighbor_score = getKNN_k(x_train, y_train, x_test, y_test, list(x.columns))
@@ -373,15 +397,15 @@ if (file_csv):
                         st.markdown("**Score :** *{:.3f}*".format(load_knn_score))
                         if (knn_auto_k):
                             st.markdown("**Best K :** *{}*".format(k_auto_neighbor))
-                            st.pyplot(plt.gcf())
+                            st.pyplot(fig)
                         else:
                             st.markdown("K Neighbors : {}".format(k_input))
                         plt.clf()
                         test_point = x_test[0]
                         if (knn_auto_k):
-                            distances, indices = knn.kneighbors([test_point], n_neighbors=k_auto_neighbor)
+                            distances, indices = load_knn.kneighbors([test_point], n_neighbors=k_auto_neighbor)
                         else:
-                            distances, indices = knn.kneighbors([test_point], n_neighbors=k_input)
+                            distances, indices = load_knn.kneighbors([test_point], n_neighbors=k_input)
                         plt.scatter(x_train[:, sbKNNVisualized_idx[0]], x_train[:, sbKNNVisualized_idx[1]], c=[(0.5, 0.5, 0.5, 0.1)], s=30, edgecolors=(0, 0, 0, 0.5), label='Other Data')
                         plt.scatter(x_train[indices[0], sbKNNVisualized_idx[0]], x_train[indices[0], sbKNNVisualized_idx[1]], c='cyan', marker='o', edgecolors='k', label='Nearest Neighbors')
                         plt.scatter(test_point[sbKNNVisualized_idx[0]], test_point[sbKNNVisualized_idx[1]], c='red', marker='x', edgecolors='k', s=100, label='Test Point')
@@ -392,7 +416,7 @@ if (file_csv):
                         st.pyplot(plt.gcf())
 
                         # AUC/ROC Curve
-                        probabilities = knn.predict_proba(x_test)
+                        probabilities = load_knn.predict_proba(x_test)
                         # fpr, tpr, _ = roc_curve(y_test, y_pred_knn)
                         fpr, tpr, _ = roc_curve(y_test, probabilities[:, 1])
                         roc_auc = auc(fpr, tpr)
