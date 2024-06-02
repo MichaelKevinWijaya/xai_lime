@@ -81,14 +81,14 @@ def remove_html_tags(text):
   clean = re.sub(r'<[^>]*>', '', text)
   return clean
 
-@st.cache_data(show_spinner=False)  # Cache the word cloud generation
+@st.cache_resource(show_spinner=False)  # Cache the word cloud generation
 def create_word_cloud(text):
     # Code to generate the Word Cloud image using WordCloud library
     wordcloud = WordCloud(width=400, height=200, background_color='white').generate(text)
     fig, ax = plt.subplots()
     ax.imshow(wordcloud, interpolation='bilinear')
     ax.axis('off')
-    fig.canvas.draw()
+    # fig.canvas.draw()
     return fig
 
 @st.cache_data(show_spinner=False)
