@@ -273,7 +273,7 @@ if (file_csv):
                 # svm_auto_gmma = st.checkbox("Auto Select", value=True, key="svm_auto_gamma")
                 # st.caption("Automatically find the most optimal Gamma for SVM model")  
             with col3:
-                st.write("#### Gamma value")
+                st.write("#### Kernel value")
                 st.caption("Select Kernel")
                 kernel_input = st.selectbox('Kernel', ['linear', 'rbf', 'poly', 'sigmoid'], key="svm_inp_kernel")
                 st.caption(":red[**WARNING!**] *Choose linear for further visualization!*")
