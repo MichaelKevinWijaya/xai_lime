@@ -243,7 +243,7 @@ if (file_csv):
                 st.caption("Select Gamma value")
                 gamma_input = st.selectbox('Gamma value', [1, 0.1, 0.01, 0.001], key="svm_inp_gamma")
             with col3:
-                st.write("#### Gamma value")
+                st.write("#### Kernel value")
                 st.caption("Select Kernel")
                 kernel_input = st.selectbox('Kernel', ['linear', 'rbf', 'poly', 'sigmoid'], key="svm_inp_kernel")
                 st.caption(":red[**WARNING!**] *Choose linear for further visualization!*")
