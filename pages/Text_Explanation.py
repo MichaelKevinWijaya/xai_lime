@@ -274,7 +274,24 @@ if (file_csv):
                     logreg_accuracy = logreg_model.score(test_x_vector, test_y)
                     st.markdown("**Score :** *{:.3f}*".format(logreg_accuracy))
                     # AUC/ROC
-                    plot_roc_curve(test_y, test_x_vector, logreg_model)
+                    # plot_roc_curve(test_y, test_x_vector, logreg_model)
+                    label_binarizer = LabelBinarizer()
+                    test_y_binary = label_binarizer.fit_transform(test_y)
+                    probabilities = logreg_model.predict_proba(test_x_vector)[:, 1]
+
+                    fpr, tpr, thresholds = roc_curve(test_y_binary, probabilities)
+                    auc_score = auc(fpr, tpr)
+
+                    plt.figure(figsize=(8, 6))
+                    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (AUC = %0.2f)' % auc_score)
+                    plt.plot([0, 1], [0, 1], color='navy', linestyle='--')
+                    plt.xlim([0.0, 1.0])
+                    plt.ylim([0.0, 1.05])
+                    plt.xlabel('False Positive Rate')
+                    plt.ylabel('True Positive Rate')
+                    plt.title('Receiver Operating Characteristic (ROC) Curve')
+                    plt.legend(loc='lower right')
+                    st.pyplot(plt.gcf())
                     saveSession({"logreg_model": logreg_model, "logreg_accuracy": logreg_accuracy})
         with col2:
             # KNN
@@ -296,7 +313,24 @@ if (file_csv):
                         st.markdown("**Score :** *{:.3f}*".format(knn_accuracy))
                         st.markdown("K Neighbors : {}".format(k_input))
                     # AUC/ROC
-                    plot_roc_curve(test_y, test_x_vector, knn_model)
+                    # plot_roc_curve(test_y, test_x_vector, knn_model)
+                    label_binarizer = LabelBinarizer()
+                    test_y_binary = label_binarizer.fit_transform(test_y)
+                    probabilities = knn_model.predict_proba(test_x_vector)[:, 1]
+
+                    fpr, tpr, thresholds = roc_curve(test_y_binary, probabilities)
+                    auc_score = auc(fpr, tpr)
+
+                    plt.figure(figsize=(8, 6))
+                    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (AUC = %0.2f)' % auc_score)
+                    plt.plot([0, 1], [0, 1], color='navy', linestyle='--')
+                    plt.xlim([0.0, 1.0])
+                    plt.ylim([0.0, 1.05])
+                    plt.xlabel('False Positive Rate')
+                    plt.ylabel('True Positive Rate')
+                    plt.title('Receiver Operating Characteristic (ROC) Curve')
+                    plt.legend(loc='lower right')
+                    st.pyplot(plt.gcf())
                     saveSession({"knn_model": knn_model, "knn_accuracy": knn_accuracy})  
         with col3:
             # SVM
@@ -308,7 +342,24 @@ if (file_csv):
                     svm_accuracy = svm_model.score(test_x_vector, test_y)
                     st.markdown("**Score :** *{:.3f}*".format(svm_accuracy))
                     # AUC/ROC
-                    plot_roc_curve(test_y, test_x_vector, svm_model)
+                    # plot_roc_curve(test_y, test_x_vector, svm_model)
+                    label_binarizer = LabelBinarizer()
+                    test_y_binary = label_binarizer.fit_transform(test_y)
+                    probabilities = svm_model.predict_proba(test_x_vector)[:, 1]
+
+                    fpr, tpr, thresholds = roc_curve(test_y_binary, probabilities)
+                    auc_score = auc(fpr, tpr)
+
+                    plt.figure(figsize=(8, 6))
+                    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (AUC = %0.2f)' % auc_score)
+                    plt.plot([0, 1], [0, 1], color='navy', linestyle='--')
+                    plt.xlim([0.0, 1.0])
+                    plt.ylim([0.0, 1.05])
+                    plt.xlabel('False Positive Rate')
+                    plt.ylabel('True Positive Rate')
+                    plt.title('Receiver Operating Characteristic (ROC) Curve')
+                    plt.legend(loc='lower right')
+                    st.pyplot(plt.gcf())
                     saveSession({"svm_model": svm_model, "svm_score": svm_accuracy})
         st.session_state["clicked"]["model_visual"] = True
     
